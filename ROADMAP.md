@@ -367,7 +367,7 @@ Make NEXFORA OS useful for real lead intake and sales tracking.
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Priority:

@@ -469,7 +469,7 @@ P0
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Route:
@@ -530,7 +530,7 @@ P0
 Status:
 
 ```text
-planned
+implemented
 ```
 
 System behavior:
@@ -579,7 +579,7 @@ P1
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Acceptance Criteria:
@@ -611,7 +611,7 @@ P0
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Route:
@@ -670,7 +670,7 @@ P0
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Route:
@@ -722,7 +722,7 @@ P0
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Statuses:
@@ -766,7 +766,7 @@ P1
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Acceptance Criteria:
@@ -796,7 +796,7 @@ P1
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Implementation:
@@ -834,7 +834,7 @@ P1
 Status:
 
 ```text
-planned
+implemented
 ```
 
 Tracks:
@@ -954,7 +954,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Filters:

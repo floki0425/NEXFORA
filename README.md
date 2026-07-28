@@ -4,16 +4,22 @@ NEXFORA OS is the internal business operating system for Nexfora Digital
 Innovation. The application uses Next.js App Router, TypeScript, Tailwind CSS,
 Supabase Auth, and Supabase PostgreSQL.
 
-The current implementation scope is Roadmap Phase 1 only:
+The current implementation includes the Phase 1 identity foundation, the
+Phase 2 admin shell, and the Phase 3 leads foundation:
 
 - Authentication
 - Internal profiles and organization membership
 - Role-based server authorization
 - Row Level Security
 - Protected admin access
+- Public project inquiry intake
+- Organization-scoped lead list, detail, creation, and editing
+- Lead status, assignment, notes, and activity history
+- Lead search and core filters
 
-Leads, CRM, clients, projects, proposals, invoices, payments, Client Portal
-functionality, and AI are intentionally out of scope.
+The CRM pipeline board, discovery workflow, lead conversion, clients, projects,
+proposals, invoices, payments, Client Portal functionality, and AI remain out
+of scope.
 
 ## Phase 1 setup
 
@@ -30,6 +36,13 @@ Before running the authenticated application, follow the complete
 - Testing authentication, authorization, and RLS
 
 Do not commit `.env.local` or expose `SUPABASE_SECRET_KEY`.
+
+## Phase 3 setup
+
+After completing Phase 1 setup, follow the
+[Phase 3 leads setup guide](docs/PHASE_3_LEADS_SETUP.md) to apply the leads
+migration, regenerate Supabase types, and verify organization isolation and
+public inquiry behavior.
 
 ## Local development
 

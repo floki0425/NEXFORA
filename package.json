@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test tests/auth/password-recovery.test.mjs",
+    "test": "node --test tests/auth/password-recovery.test.mjs tests/leads/lead-foundation.test.mjs",
     "reset-owner-password": "node --env-file=.env.local scripts/reset-owner-password.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
