@@ -1367,7 +1367,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Fields:
@@ -1416,7 +1416,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Route:
@@ -1455,7 +1455,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Route:
@@ -1495,7 +1495,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Statuses:
@@ -1541,7 +1541,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Assign:
@@ -1579,7 +1579,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Fields:
@@ -1610,7 +1610,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Statuses:
@@ -1667,7 +1667,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Fields:
@@ -1702,7 +1702,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Statuses:
@@ -1734,7 +1734,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Acceptance Criteria:
@@ -1797,7 +1797,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Initial rule:

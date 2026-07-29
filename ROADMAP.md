@@ -558,7 +558,7 @@ Enable Nexfora to manage actual delivery after client conversion.
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Feature References:

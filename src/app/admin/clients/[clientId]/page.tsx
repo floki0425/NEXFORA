@@ -1,9 +1,11 @@
 import {
   ArrowLeft,
   ExternalLink,
+  FolderKanban,
   Mail,
   Pencil,
   Phone,
+  Plus,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -27,6 +29,13 @@ import { formatClientDate } from "@/features/clients/format";
 import { memberCanManageClients } from "@/features/clients/permissions";
 import { getClientDetail } from "@/features/clients/queries";
 import { clientIdSchema } from "@/features/clients/schemas";
+import {
+  PROJECT_STATUS_BADGES,
+  PROJECT_STATUS_LABELS,
+} from "@/features/projects/constants";
+import { formatProjectDate } from "@/features/projects/format";
+import { memberCanManageProjects } from "@/features/projects/permissions";
+import { getClientProjects } from "@/features/projects/queries";
 import { requireInternalMember } from "@/lib/auth/server";
 
 interface ClientPageProps {
@@ -80,6 +89,8 @@ export default async function ClientDetailPage({
   const conversion = one(rawSearchParams.conversion);
   const updated = one(rawSearchParams.updated) === "1";
   const canManage = memberCanManageClients(member);
+  const canManageProjects = memberCanManageProjects(member);
+  const projects = await getClientProjects(member.organizationId, client.id);
 
   return (
     <div className="space-y-7">
@@ -96,14 +107,27 @@ export default async function ClientDetailPage({
         title={client.business_name}
         description={`Primary contact: ${client.contact_name}`}
         action={
-          canManage ? (
-            <Link
-              href={`/admin/clients/${client.id}/edit`}
-              className={buttonStyles({ variant: "secondary" })}
-            >
-              <Pencil className="size-4" aria-hidden="true" />
-              Edit client
-            </Link>
+          canManage || canManageProjects ? (
+            <div className="flex flex-wrap gap-2">
+              {canManageProjects ? (
+                <Link
+                  href={`/admin/projects/new?clientId=${client.id}`}
+                  className={buttonStyles()}
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  Create project
+                </Link>
+              ) : null}
+              {canManage ? (
+                <Link
+                  href={`/admin/clients/${client.id}/edit`}
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  <Pencil className="size-4" aria-hidden="true" />
+                  Edit client
+                </Link>
+              ) : null}
+            </div>
           ) : null
         }
       />
@@ -229,6 +253,51 @@ export default async function ClientDetailPage({
         </div>
 
         <aside className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Projects</CardTitle>
+              <CardDescription>
+                Delivery engagements for this client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {projects.length ? (
+                <ul className="space-y-4">
+                  {projects.map((project) => (
+                    <li key={project.id}>
+                      <Link
+                        href={`/admin/projects/${project.id}`}
+                        className="flex items-center justify-between gap-3 rounded-md border border-border p-3 hover:border-accent/50"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {project.name}
+                          </p>
+                          <p className="mt-1 text-xs text-text-muted">
+                            {formatProjectDate(project.updatedAt)}
+                          </p>
+                        </div>
+                        <Badge variant={PROJECT_STATUS_BADGES[project.status]}>
+                          {PROJECT_STATUS_LABELS[project.status]}
+                        </Badge>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center">
+                  <FolderKanban
+                    className="mx-auto size-8 text-text-muted"
+                    aria-hidden="true"
+                  />
+                  <p className="mt-3 text-sm leading-6 text-text-secondary">
+                    No projects yet for this client.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>CRM source</CardTitle>
