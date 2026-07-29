@@ -29,6 +29,8 @@ import { formatClientDate } from "@/features/clients/format";
 import { memberCanManageClients } from "@/features/clients/permissions";
 import { getClientDetail } from "@/features/clients/queries";
 import { clientIdSchema } from "@/features/clients/schemas";
+import { ClientPortalAccessCard } from "@/features/client-invitations/components/client-portal-access-card";
+import { getClientPortalAccess } from "@/features/client-invitations/queries";
 import {
   PROJECT_STATUS_BADGES,
   PROJECT_STATUS_LABELS,
@@ -91,6 +93,7 @@ export default async function ClientDetailPage({
   const canManage = memberCanManageClients(member);
   const canManageProjects = memberCanManageProjects(member);
   const projects = await getClientProjects(member.organizationId, client.id);
+  const portalAccess = await getClientPortalAccess(client.id);
 
   return (
     <div className="space-y-7">
@@ -250,6 +253,12 @@ export default async function ClientDetailPage({
               </p>
             </CardContent>
           </Card>
+
+          <ClientPortalAccessCard
+            clientId={client.id}
+            data={portalAccess}
+            canManage={canManage}
+          />
         </div>
 
         <aside className="space-y-6">

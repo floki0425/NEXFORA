@@ -34,3 +34,15 @@ export interface InternalMember {
   profile: CurrentProfile;
   organization: OrganizationSummary;
 }
+
+export const CLIENT_ROLES = ["owner", "manager", "viewer"] as const;
+
+export type ClientRole = (typeof CLIENT_ROLES)[number];
+
+export interface PortalMember {
+  clientId: string;
+  businessName: string;
+  role: ClientRole;
+  status: "active";
+  profile: CurrentProfile;
+}

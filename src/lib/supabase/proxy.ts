@@ -5,10 +5,24 @@ import { publicEnv } from "@/config/env.public";
 
 const ADMIN_PATH = "/admin";
 const LOGIN_PATH = "/auth/login";
+const PORTAL_PATH = "/portal";
+const PORTAL_LOGIN_PATH = "/portal/login";
+const PORTAL_PUBLIC_PATHS = ["/portal/login", "/portal/invitations/accept"];
 const AUTH_CACHE_HEADERS = ["cache-control", "expires", "pragma"] as const;
 
 function isAdminPath(pathname: string): boolean {
   return pathname === ADMIN_PATH || pathname.startsWith(`${ADMIN_PATH}/`);
+}
+
+function isProtectedPortalPath(pathname: string): boolean {
+  if (!(pathname === PORTAL_PATH || pathname.startsWith(`${PORTAL_PATH}/`))) {
+    return false;
+  }
+
+  return !PORTAL_PUBLIC_PATHS.some(
+    (publicPath) =>
+      pathname === publicPath || pathname.startsWith(`${publicPath}/`),
+  );
 }
 
 function copyAuthState(
@@ -65,12 +79,12 @@ export async function updateSession(
   const { data: claimsData, error: claimsError } =
     await supabase.auth.getClaims();
 
-  if (
-    isAdminPath(request.nextUrl.pathname) &&
-    (claimsError || !claimsData?.claims?.sub)
-  ) {
+  const pathname = request.nextUrl.pathname;
+  const isUnauthenticated = Boolean(claimsError) || !claimsData?.claims?.sub;
+
+  if ((isAdminPath(pathname) || isProtectedPortalPath(pathname)) && isUnauthenticated) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = LOGIN_PATH;
+    loginUrl.pathname = isAdminPath(pathname) ? LOGIN_PATH : PORTAL_LOGIN_PATH;
     loginUrl.search = "";
 
     const redirectResponse = NextResponse.redirect(loginUrl);

@@ -5,15 +5,26 @@ export type SendProposalEmailResult =
       reason: "not_configured" | "invalid_recipient" | "provider_error";
     };
 
+/** Generic alias — the result shape is identical for every transactional
+ * email sent through sendViaResendClient, not just proposals. */
+export type SendEmailResult = SendProposalEmailResult;
+
+export interface ResendSendOptions {
+  idempotencyKey?: string;
+}
+
 /** The minimal shape of the Resend SDK's emails.send this module depends on. */
 export interface ResendLikeClient {
   emails: {
-    send: (params: {
-      from: string;
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<{
+    send: (
+      params: {
+        from: string;
+        to: string;
+        subject: string;
+        html: string;
+      },
+      options?: ResendSendOptions,
+    ) => Promise<{
       data: unknown;
       error: { name: string; statusCode: number | null; message: string } | null;
     }>;
@@ -77,9 +88,10 @@ export async function sendViaResendClient(
   client: ResendLikeClient,
   params: { from: string; to: string; subject: string; html: string },
   diagnostics: { operation: string; emailFromLoaded: boolean },
+  options?: ResendSendOptions,
 ): Promise<SendProposalEmailResult> {
   try {
-    const { error } = await client.emails.send(params);
+    const { error } = await client.emails.send(params, options);
 
     if (error) {
       logEmailDiagnostics(diagnostics.operation, {

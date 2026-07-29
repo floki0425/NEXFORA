@@ -2368,7 +2368,15 @@ P0
 Status:
 
 ```text
-planned
+testing
+```
+
+Dependencies:
+
+```text
+clients (Phase 4)
+Resend
+Client invitation token
 ```
 
 ---
@@ -2390,7 +2398,13 @@ P0
 Status:
 
 ```text
-planned
+testing
+```
+
+Dependencies:
+
+```text
+Client invitation acceptance
 ```
 
 ---
@@ -2412,7 +2426,13 @@ P0
 Status:
 
 ```text
-planned
+testing
+```
+
+Dependencies:
+
+```text
+Client login
 ```
 
 ---
@@ -2434,16 +2454,21 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
-Display:
+Display (this phase):
 
 ```text
 Active Project
 Progress
 Current Stage
 Next Milestone
+```
+
+Deferred to later phases (not fetched or faked in this phase):
+
+```text
 Required Actions
 Recent Files
 Revision Status
@@ -2468,10 +2493,12 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
-Must expose only client-safe data.
+Must expose only client-safe data. Only projects and milestones are
+client-safe in this phase — tasks have no documented client-visible
+boundary and are not exposed.
 
 ---
 

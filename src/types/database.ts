@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_invitations: {
+        Row: {
+          accepted_at: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          role: string
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          role?: string
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          role?: string
+          status?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_invitations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_users: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           billing_address: string | null
@@ -827,6 +923,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_client_invitation: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       accept_proposal_by_token: {
         Args: { p_token_hash: string }
         Returns: Json
@@ -838,9 +938,52 @@ export type Database = {
           created_new: boolean
         }[]
       }
+      create_or_resend_client_invitation: {
+        Args: {
+          p_email: string
+          p_expires_at: string
+          p_role: string
+          p_token_hash: string
+          target_client_id: string
+        }
+        Returns: {
+          created_new: boolean
+          invitation_id: string
+        }[]
+      }
       decline_proposal_by_token: {
         Args: { p_token_hash: string }
         Returns: Json
+      }
+      get_active_client_membership: {
+        Args: never
+        Returns: {
+          business_name: string
+          client_id: string
+          client_role: string
+          client_status: string
+        }[]
+      }
+      get_client_invitation_by_token: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
+      get_client_project_detail: {
+        Args: { target_project_id: string }
+        Returns: Json
+      }
+      get_client_projects: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+          priority: string
+          progress_percent: number
+          start_date: string
+          status: string
+          target_date: string
+          updated_at: string
+        }[]
       }
       reissue_proposal_access_token: {
         Args: {
@@ -853,6 +996,10 @@ export type Database = {
       request_proposal_changes_by_token: {
         Args: { p_message: string; p_token_hash: string }
         Returns: Json
+      }
+      revoke_client_invitation: {
+        Args: { target_invitation_id: string }
+        Returns: undefined
       }
       send_proposal: {
         Args: {
