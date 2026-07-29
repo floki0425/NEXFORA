@@ -39,6 +39,8 @@ export const SERVICE_INTERESTS = [
   "Other",
 ] as const;
 
+export type ServiceInterest = (typeof SERVICE_INTERESTS)[number];
+
 export const REQUESTED_FEATURES = [
   "Customer accounts",
   "Admin dashboard",
@@ -49,6 +51,8 @@ export const REQUESTED_FEATURES = [
   "Third-party integrations",
   "Content management",
 ] as const;
+
+export type RequestedFeature = (typeof REQUESTED_FEATURES)[number];
 
 export const BUDGET_OPTIONS = [
   { label: "Under ₱50,000", min: 0, max: 49999 },

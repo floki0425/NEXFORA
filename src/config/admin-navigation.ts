@@ -1,5 +1,6 @@
 import {
   BriefcaseBusiness,
+  FileText,
   FolderKanban,
   LayoutDashboard,
   Settings,
@@ -48,6 +49,11 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     label: "Projects",
     href: "/admin/projects",
     icon: FolderKanban,
+  },
+  {
+    label: "Proposals",
+    href: "/admin/proposals",
+    icon: FileText,
   },
   {
     label: "Settings",

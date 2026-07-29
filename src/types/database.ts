@@ -515,6 +515,243 @@ export type Database = {
           },
         ]
       }
+      proposal_access_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          proposal_id: string
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          proposal_id: string
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          proposal_id?: string
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_access_tokens_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          proposal_id: string
+          quantity: number
+          sort_order: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          proposal_id: string
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          proposal_id?: string
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          proposal_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          proposal_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          proposal_id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_versions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          accepted_at: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          deliverables: Json
+          discount: number
+          id: string
+          lead_id: string | null
+          organization_id: string
+          payment_terms_text: string | null
+          proposal_number: string | null
+          requested_changes_message: string | null
+          scope: string | null
+          sent_at: string | null
+          status: string
+          subtotal: number
+          summary: string | null
+          tax: number
+          terms_text: string | null
+          timeline_text: string | null
+          title: string
+          total: number
+          updated_at: string
+          valid_until: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          declined_at?: string | null
+          deliverables?: Json
+          discount?: number
+          id?: string
+          lead_id?: string | null
+          organization_id: string
+          payment_terms_text?: string | null
+          proposal_number?: string | null
+          requested_changes_message?: string | null
+          scope?: string | null
+          sent_at?: string | null
+          status?: string
+          subtotal?: number
+          summary?: string | null
+          tax?: number
+          terms_text?: string | null
+          timeline_text?: string | null
+          title: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          declined_at?: string | null
+          deliverables?: Json
+          discount?: number
+          id?: string
+          lead_id?: string | null
+          organization_id?: string
+          payment_terms_text?: string | null
+          proposal_number?: string | null
+          requested_changes_message?: string | null
+          scope?: string | null
+          sent_at?: string | null
+          status?: string
+          subtotal?: number
+          summary?: string | null
+          tax?: number
+          terms_text?: string | null
+          timeline_text?: string | null
+          title?: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -590,11 +827,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_proposal_by_token: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       convert_lead_to_client: {
         Args: { target_lead_id: string }
         Returns: {
           client_id: string
           created_new: boolean
+        }[]
+      }
+      decline_proposal_by_token: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
+      reissue_proposal_access_token: {
+        Args: {
+          p_token_expires_at: string
+          p_token_hash: string
+          target_proposal_id: string
+        }
+        Returns: undefined
+      }
+      request_proposal_changes_by_token: {
+        Args: { p_message: string; p_token_hash: string }
+        Returns: Json
+      }
+      send_proposal: {
+        Args: {
+          p_token_expires_at: string
+          p_token_hash: string
+          target_proposal_id: string
+        }
+        Returns: {
+          proposal_number: string
+          version_number: number
         }[]
       }
       submit_project_inquiry: {
@@ -613,6 +881,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      view_proposal_by_token: { Args: { p_token_hash: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

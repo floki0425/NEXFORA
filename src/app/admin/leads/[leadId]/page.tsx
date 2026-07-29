@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   BriefcaseBusiness,
+  FileText,
   Mail,
   Pencil,
   Phone,
@@ -31,6 +32,10 @@ import { formatBudget, formatLeadDate } from "@/features/leads/format";
 import { memberCanManageLeads } from "@/features/leads/permissions";
 import { getLeadDetail } from "@/features/leads/queries";
 import { leadIdSchema } from "@/features/leads/schemas";
+import {
+  isLeadEligibleForProposal,
+  memberCanManageProposals,
+} from "@/features/proposals/permissions";
 import { requireInternalMember } from "@/lib/auth/server";
 
 interface LeadPageProps {
@@ -79,6 +84,8 @@ export default async function LeadDetailPage({ params }: LeadPageProps) {
     lead.status,
     lead.converted_client_id,
   );
+  const canCreateProposal =
+    memberCanManageProposals(member) && isLeadEligibleForProposal(lead.status);
   const requestedFeatures = Array.isArray(lead.requested_features)
     ? lead.requested_features.filter((value): value is string => typeof value === "string")
     : [];
@@ -94,8 +101,17 @@ export default async function LeadDetailPage({ params }: LeadPageProps) {
         title={lead.full_name}
         description={lead.business_name ?? lead.service_interest}
         action={
-          canManage || lead.converted_client_id ? (
+          canManage || lead.converted_client_id || canCreateProposal ? (
             <div className="flex flex-wrap gap-2">
+              {canCreateProposal ? (
+                <Link
+                  href={`/admin/proposals/new?leadId=${lead.id}`}
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  <FileText className="size-4" aria-hidden="true" />
+                  Create proposal
+                </Link>
+              ) : null}
               {lead.converted_client_id ? (
                 <Link
                   href={`/admin/clients/${lead.converted_client_id}`}

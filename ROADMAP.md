@@ -718,7 +718,7 @@ Turn qualified opportunities into professional proposals.
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Version:

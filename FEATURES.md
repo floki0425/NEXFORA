@@ -2111,7 +2111,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Flow:
@@ -2147,7 +2147,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Includes:
@@ -2185,7 +2185,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 ---
@@ -2207,7 +2207,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Format example:
@@ -2237,7 +2237,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Dependencies:
@@ -2267,7 +2267,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 ---
@@ -2289,7 +2289,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Must be:
@@ -2320,7 +2320,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 ---
@@ -2342,7 +2342,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Accepted proposal versions must not be silently overwritten.
