@@ -6,12 +6,12 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 
 import { addLeadNoteAction } from "../actions";
 import { leadNoteSchema } from "../schemas";
 import type { ActionResult } from "../types";
-import { FormField } from "./form-field";
 
 interface NoteFields {
   note: string;

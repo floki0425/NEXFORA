@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,6 @@ import {
   type LeadFormInput,
 } from "../schemas";
 import type { ActionResult, LeadDetail, MemberOption } from "../types";
-import { FormField } from "./form-field";
 
 interface LeadFormProps {
   members: MemberOption[];

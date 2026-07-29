@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          billing_address: string | null
+          business_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          industry: string | null
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          source_lead_id: string | null
+          status: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          billing_address?: string | null
+          business_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          industry?: string | null
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          source_lead_id?: string | null
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          billing_address?: string | null
+          business_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          industry?: string | null
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          source_lead_id?: string | null
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_activities: {
         Row: {
           activity_type: string
@@ -157,6 +223,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leads_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -278,10 +351,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      convert_lead_to_client: {
+        Args: { target_lead_id: string }
+        Returns: {
+          client_id: string
+          created_new: boolean
+        }[]
+      }
       submit_project_inquiry: {
         Args: {
-          inquiry_budget_max: number | null
-          inquiry_budget_min: number | null
+          inquiry_budget_max?: number
+          inquiry_budget_min?: number
           inquiry_business_name: string
           inquiry_email: string
           inquiry_full_name: string

@@ -27,5 +27,9 @@ export function formatBudget(
     return `${formatter.format(minimum)}+`;
   }
 
-  return `Up to ${formatter.format(maximum ?? 0)}`;
+  if (maximum !== null) {
+    return `Up to ${formatter.format(maximum)}`;
+  }
+
+  return "Not specified";
 }

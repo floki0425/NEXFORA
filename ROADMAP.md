@@ -480,7 +480,7 @@ Turn won leads into structured client records.
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Feature References:

@@ -8,6 +8,7 @@ import {
   canReadLead,
 } from "../../src/features/leads/permissions.ts";
 import {
+  buildSubmitProjectInquiryBudgetArgs,
   isValidBudgetRange,
   normalizeLeadCreateBudgets,
   normalizeLeadUpdateBudgets,
@@ -103,6 +104,38 @@ test("creating a lead with minimum and maximum budgets preserves both numbers", 
     budget_max: 250000,
   });
   assert.equal(isValidBudgetRange(budgets), true);
+});
+
+test("public inquiry RPC budgets support no value, either bound, or both", () => {
+  const scenarios = [
+    {
+      input: { budgetMin: null, budgetMax: null },
+      expected: {},
+    },
+    {
+      input: { budgetMin: 100000, budgetMax: null },
+      expected: { inquiry_budget_min: 100000 },
+    },
+    {
+      input: { budgetMin: null, budgetMax: 250000 },
+      expected: { inquiry_budget_max: 250000 },
+    },
+    {
+      input: { budgetMin: 100000, budgetMax: 250000 },
+      expected: {
+        inquiry_budget_min: 100000,
+        inquiry_budget_max: 250000,
+      },
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const budgets = normalizeLeadCreateBudgets(scenario.input);
+    assert.deepEqual(
+      buildSubmitProjectInquiryBudgetArgs(budgets),
+      scenario.expected,
+    );
+  }
 });
 
 test("lead validation rejects a negative budget", () => {
@@ -270,6 +303,50 @@ test("migration enforces organization RLS, manager writes, immutable activity, a
   assert.match(migration, /grant execute on function public\.submit_project_inquiry/i);
 });
 
+test("public inquiry migration defaults nullable budgets and maps them to lead columns", async () => {
+  const [foundationMigration, nullableBudgetMigration] = await Promise.all([
+    readFile(
+      new URL(
+        "../../supabase/migrations/20260729000000_phase_3_leads_crm.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../../supabase/migrations/20260729120000_phase_3_public_inquiry_nullable_budgets.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(
+    nullableBudgetMigration,
+    /inquiry_target_timeline text,\s+inquiry_budget_min numeric default null,\s+inquiry_budget_max numeric default null/i,
+  );
+  assert.match(
+    nullableBudgetMigration,
+    /budget_min,\s+budget_max,\s+target_timeline[\s\S]*?inquiry_budget_min,\s+inquiry_budget_max,\s+nullif\(btrim\(inquiry_target_timeline\), ''\)/i,
+  );
+  assert.doesNotMatch(
+    nullableBudgetMigration,
+    /coalesce\s*\(\s*inquiry_budget_(?:min|max)\s*,\s*0/i,
+  );
+  assert.match(
+    foundationMigration,
+    /check \(budget_min is null or budget_min >= 0\)/i,
+  );
+  assert.match(
+    foundationMigration,
+    /check \(budget_max is null or budget_max >= 0\)/i,
+  );
+  assert.match(
+    foundationMigration,
+    /budget_min is null\s+or budget_max is null\s+or budget_max >= budget_min/i,
+  );
+});
+
 test("server actions derive tenant and initial status and scope every update", async () => {
   const actions = await readFile(
     new URL("../../src/features/leads/actions.ts", import.meta.url),
@@ -306,11 +383,17 @@ test("direct lead table operations use budget_min and budget_max only", async ()
   assert.doesNotMatch(queries, /inquiry_budget_(min|max)/);
 });
 
-test("public inquiry maps nullable budgets to the generated RPC argument names", async () => {
-  const actions = await readFile(
-    new URL("../../src/features/leads/actions.ts", import.meta.url),
-    "utf8",
-  );
+test("public inquiry omits null budgets from the generated RPC argument payload", async () => {
+  const [actions, budgetFormatter] = await Promise.all([
+    readFile(
+      new URL("../../src/features/leads/actions.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../../src/features/leads/format.ts", import.meta.url),
+      "utf8",
+    ),
+  ]);
   const rpcActionSection = actions.slice(
     actions.indexOf("export async function submitProjectInquiryAction"),
   );
@@ -321,10 +404,8 @@ test("public inquiry maps nullable budgets to the generated RPC argument names",
   );
   assert.match(
     rpcActionSection,
-    /inquiry_budget_min: budgets\.budget_min/,
+    /\.\.\.buildSubmitProjectInquiryBudgetArgs\(budgets\)/,
   );
-  assert.match(
-    rpcActionSection,
-    /inquiry_budget_max: budgets\.budget_max/,
-  );
+  assert.doesNotMatch(rpcActionSection, /budget(?:Min|Max)\s*\?\?\s*0/);
+  assert.doesNotMatch(budgetFormatter, /maximum\s*\?\?\s*0/);
 });

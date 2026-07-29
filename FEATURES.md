@@ -1179,7 +1179,7 @@ P0
 Status:
 
 ```text
-planned
+completed
 ```
 
 Dependencies:
@@ -1234,7 +1234,7 @@ P1
 Status:
 
 ```text
-planned
+completed
 ```
 
 Route:
@@ -1271,7 +1271,7 @@ P1
 Status:
 
 ```text
-planned
+completed
 ```
 
 Route:

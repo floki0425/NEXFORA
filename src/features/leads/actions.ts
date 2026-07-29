@@ -10,6 +10,7 @@ import type { Database } from "@/types/database";
 
 import { BUDGET_OPTIONS } from "./constants";
 import {
+  buildSubmitProjectInquiryBudgetArgs,
   isValidBudgetRange,
   normalizeLeadCreateBudgets,
   normalizeLeadUpdateBudgets,
@@ -412,9 +413,8 @@ export async function submitProjectInquiryAction(
       inquiry_service_interest: parsed.data.serviceInterest,
       inquiry_problem_summary: parsed.data.problemSummary,
       inquiry_requested_features: parsed.data.requestedFeatures,
-      inquiry_budget_min: budgets.budget_min,
-      inquiry_budget_max: budgets.budget_max,
       inquiry_target_timeline: parsed.data.targetTimeline,
+      ...buildSubmitProjectInquiryBudgetArgs(budgets),
     };
     const { error } = await supabase.rpc(
       "submit_project_inquiry",

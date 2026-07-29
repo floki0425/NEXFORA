@@ -40,6 +40,19 @@ export function normalizeLeadCreateBudgets(values: {
   };
 }
 
+export function buildSubmitProjectInquiryBudgetArgs(
+  budgets: LeadBudgetValues,
+) {
+  return {
+    ...(budgets.budget_min !== null
+      ? { inquiry_budget_min: budgets.budget_min }
+      : {}),
+    ...(budgets.budget_max !== null
+      ? { inquiry_budget_max: budgets.budget_max }
+      : {}),
+  };
+}
+
 export function normalizeLeadUpdateBudgets(values: {
   budgetMin?: BudgetFormValue;
   budgetMax?: BudgetFormValue;

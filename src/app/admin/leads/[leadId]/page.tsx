@@ -1,4 +1,10 @@
-import { ArrowLeft, Mail, Pencil, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  Mail,
+  Pencil,
+  Phone,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { canConvertLeadToClient } from "@/features/clients/permissions";
 import { LeadNoteForm } from "@/features/leads/components/lead-note-form";
 import { LeadStatusForm } from "@/features/leads/components/lead-status-form";
 import {
@@ -67,6 +74,11 @@ export default async function LeadDetailPage({ params }: LeadPageProps) {
   }
 
   const canManage = memberCanManageLeads(member);
+  const canConvert = canConvertLeadToClient(
+    member.role,
+    lead.status,
+    lead.converted_client_id,
+  );
   const requestedFeatures = Array.isArray(lead.requested_features)
     ? lead.requested_features.filter((value): value is string => typeof value === "string")
     : [];
@@ -82,11 +94,41 @@ export default async function LeadDetailPage({ params }: LeadPageProps) {
         title={lead.full_name}
         description={lead.business_name ?? lead.service_interest}
         action={
-          canManage ? (
-            <Link href={`/admin/leads/${lead.id}/edit`} className={buttonStyles({ variant: "secondary" })}>
-              <Pencil className="size-4" aria-hidden="true" />
-              Edit lead
-            </Link>
+          canManage || lead.converted_client_id ? (
+            <div className="flex flex-wrap gap-2">
+              {lead.converted_client_id ? (
+                <Link
+                  href={`/admin/clients/${lead.converted_client_id}`}
+                  className={buttonStyles()}
+                >
+                  <BriefcaseBusiness
+                    className="size-4"
+                    aria-hidden="true"
+                  />
+                  View client
+                </Link>
+              ) : canConvert ? (
+                <Link
+                  href={`/admin/leads/${lead.id}/convert`}
+                  className={buttonStyles()}
+                >
+                  <BriefcaseBusiness
+                    className="size-4"
+                    aria-hidden="true"
+                  />
+                  Convert to client
+                </Link>
+              ) : null}
+              {canManage ? (
+                <Link
+                  href={`/admin/leads/${lead.id}/edit`}
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  <Pencil className="size-4" aria-hidden="true" />
+                  Edit lead
+                </Link>
+              ) : null}
+            </div>
           ) : null
         }
       />

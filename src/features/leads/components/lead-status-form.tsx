@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -13,7 +14,6 @@ import { updateLeadStatusAction } from "../actions";
 import { LEAD_STATUSES, LEAD_STATUS_LABELS, type LeadStatus } from "../constants";
 import { leadStatusSchema } from "../schemas";
 import type { ActionResult } from "../types";
-import { FormField } from "./form-field";
 
 interface LeadStatusFormProps {
   leadId: string;

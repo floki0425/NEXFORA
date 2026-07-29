@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -21,7 +22,6 @@ import {
   type PublicInquiryInput,
 } from "../schemas";
 import type { ActionResult } from "../types";
-import { FormField } from "./form-field";
 
 const STEPS = [
   { title: "Service", description: "What would you like to build?" },

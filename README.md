@@ -5,7 +5,8 @@ Innovation. The application uses Next.js App Router, TypeScript, Tailwind CSS,
 Supabase Auth, and Supabase PostgreSQL.
 
 The current implementation includes the Phase 1 identity foundation, the
-Phase 2 admin shell, and the Phase 3 leads foundation:
+Phase 2 admin shell, the Phase 3 leads foundation, and the Phase 4 conversion
+and client workspace:
 
 - Authentication
 - Internal profiles and organization membership
@@ -16,10 +17,13 @@ Phase 2 admin shell, and the Phase 3 leads foundation:
 - Organization-scoped lead list, detail, creation, and editing
 - Lead status, assignment, notes, and activity history
 - Lead search and core filters
+- Atomic, idempotent won-lead conversion
+- Organization-scoped client list, detail, and editing
+- Client search, status filtering, pagination, and source-lead history
 
-The CRM pipeline board, discovery workflow, lead conversion, clients, projects,
-proposals, invoices, payments, Client Portal functionality, and AI remain out
-of scope.
+The CRM pipeline board, discovery workflow, manual client creation, dedicated
+client archive workflow, projects, proposals, invoices, payments, Client
+Portal functionality, and AI remain out of scope.
 
 ## Phase 1 setup
 
@@ -43,6 +47,13 @@ After completing Phase 1 setup, follow the
 [Phase 3 leads setup guide](docs/PHASE_3_LEADS_SETUP.md) to apply the leads
 migration, regenerate Supabase types, and verify organization isolation and
 public inquiry behavior.
+
+## Phase 4 setup
+
+After completing the Phase 3 setup, follow the
+[Phase 4 clients setup guide](docs/PHASE_4_CLIENTS_SETUP.md) to apply the
+clients migration, regenerate Supabase types, and verify atomic conversion,
+role enforcement, duplicate protection, and client organization isolation.
 
 ## Local development
 
