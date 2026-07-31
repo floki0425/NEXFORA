@@ -3,6 +3,7 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  ListChecks,
   Settings,
   UsersRound,
   type LucideIcon,
@@ -54,6 +55,11 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     label: "Proposals",
     href: "/admin/proposals",
     icon: FileText,
+  },
+  {
+    label: "Revisions",
+    href: "/admin/revisions",
+    icon: ListChecks,
   },
   {
     label: "Settings",

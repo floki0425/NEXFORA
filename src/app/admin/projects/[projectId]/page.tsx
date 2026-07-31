@@ -1,4 +1,10 @@
-import { ArrowLeft, BriefcaseBusiness, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  FolderOpen,
+  ListChecks,
+  Pencil,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -121,6 +127,20 @@ export default async function ProjectDetailPage({
             >
               <BriefcaseBusiness className="size-4" aria-hidden="true" />
               View client
+            </Link>
+            <Link
+              href={`/admin/projects/${project.id}/files`}
+              className={buttonStyles({ variant: "secondary" })}
+            >
+              <FolderOpen className="size-4" aria-hidden="true" />
+              Files
+            </Link>
+            <Link
+              href={`/admin/revisions?projectId=${project.id}`}
+              className={buttonStyles({ variant: "secondary" })}
+            >
+              <ListChecks className="size-4" aria-hidden="true" />
+              Revisions
             </Link>
             {canManage ? (
               <Link

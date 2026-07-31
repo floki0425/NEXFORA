@@ -2521,15 +2521,20 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Uses:
 
 ```text
-Supabase Storage
+Supabase Storage (project-files-private, not public)
 project_files metadata
 ```
+
+Internal upload permissions (documented decision): super_admin/admin for any
+project; project_manager/team_member only for a project they manage or are a
+project_members row for. Client upload permissions: owner/manager only,
+viewer read-only. See `docs/PHASE_8_FILES_REVISIONS_SETUP.md`.
 
 ---
 
@@ -2550,7 +2555,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Values:
@@ -2559,6 +2564,10 @@ Values:
 internal
 client
 ```
+
+Internal reads see both values; portal reads are restricted to
+`visibility = 'client'` through `get_client_project_files()` only — no
+client-facing RLS policy exists on `project_files`.
 
 ---
 
@@ -2579,8 +2588,12 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
+
+120-second signed URLs, generated only after server-side authorization
+(organization/project membership, or client ownership via
+`get_client_file_for_download()`). No public/permanent URL is ever returned.
 
 ---
 
@@ -2603,8 +2616,11 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+Portal owner/manager only (viewer read-only), via `create_client_revision()`.
+organization_id/client_id/project_id/submitted_by are all server-resolved.
 
 ---
 
@@ -2625,7 +2641,7 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
 
 Statuses:
@@ -2639,6 +2655,11 @@ approved
 rejected
 closed
 ```
+
+Internal-driven transitions only go through `transition_revision_status()`;
+`status` is not directly updatable by the authenticated role. Assignment is
+super_admin/admin/project_manager (accessible project) only — team_member
+may update the status of a revision assigned to them but may never assign.
 
 ---
 
@@ -2659,8 +2680,12 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+Approve is idempotent; requesting further changes requires a non-empty
+comment, stored append-only in `revision_activities` so an earlier request is
+never overwritten by a later one.
 
 ---
 

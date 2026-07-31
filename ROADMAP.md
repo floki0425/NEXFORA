@@ -873,8 +873,16 @@ Replace scattered client files and revision requests.
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Implementation summary: migration, RLS/storage policies, RPC functions,
+feature modules, admin/portal UI, and tests are written (see
+`docs/PHASE_8_FILES_REVISIONS_SETUP.md`). The migration has not yet been
+applied to a Supabase project in this session (no live database access was
+available), so `npm run typecheck`/`npm run build` will not pass and manual
+verification has not been performed until a maintainer applies it and
+regenerates `src/types/database.ts`.
 
 Version:
 

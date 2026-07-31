@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test tests/auth/password-recovery.test.mjs tests/leads/lead-foundation.test.mjs tests/clients/client-management.test.mjs tests/projects/project-management.test.mjs tests/proposals/proposal-system.test.mjs tests/portal/client-portal.test.mjs",
+    "test": "node --test tests/auth/password-recovery.test.mjs tests/leads/lead-foundation.test.mjs tests/clients/client-management.test.mjs tests/projects/project-management.test.mjs tests/proposals/proposal-system.test.mjs tests/portal/client-portal.test.mjs tests/files/project-files.test.mjs tests/revisions/revisions.test.mjs tests/phase8/unit/file-validation.test.mjs tests/phase8/unit/storage-path.test.mjs tests/phase8/unit/revision-validation.test.mjs tests/phase8/unit/revision-transitions.test.mjs tests/phase8/unit/error-and-cleanup.test.mjs tests/phase8/integration/rls-files-and-revisions.test.mjs tests/phase8/integration/storage.test.mjs tests/phase8/integration/revision-workflow.test.mjs",
+    "test:phase8": "node --test tests/phase8/unit/file-validation.test.mjs tests/phase8/unit/storage-path.test.mjs tests/phase8/unit/revision-validation.test.mjs tests/phase8/unit/revision-transitions.test.mjs tests/phase8/unit/error-and-cleanup.test.mjs tests/phase8/integration/rls-files-and-revisions.test.mjs tests/phase8/integration/storage.test.mjs tests/phase8/integration/revision-workflow.test.mjs",
+    "test:e2e:phase8": "playwright test",
+    "test:phase8:all": "npm run test:phase8 && npm run test:e2e:phase8",
     "reset-owner-password": "node --env-file=.env.local scripts/reset-owner-password.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
@@ -25,10 +28,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "supabase": "^2.109.1",
