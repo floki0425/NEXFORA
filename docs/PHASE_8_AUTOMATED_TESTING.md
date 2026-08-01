@@ -156,6 +156,8 @@ clients, and project rather than creating duplicates.
 
 ```bash
 npm run test:phase8       # Phase 8 unit + integration tests (node --test)
+npm run test:phase8:unit  # fast pure unit tests (default file concurrency)
+npm run test:phase8:integration # remote Supabase integration files, serially
 npm run dev:e2e:phase8    # supporting test-env Next.js server (normally automatic)
 npm run test:e2e:phase8   # Phase 8 Playwright E2E specs
 npm run test:phase8:all   # both, in sequence
@@ -166,6 +168,14 @@ npm test                  # the full repository suite, Phase 8 included
 Playwright's `webServer` configuration. Do not start `npm run dev` first;
 `reuseExistingServer: false` ensures an app using `.env.local` cannot be
 silently reused for the test run.
+
+`test:phase8` deliberately runs the pure unit files first, then invokes the
+three real-Supabase integration files with Node's supported
+`--test-concurrency=1` option. The integration fixtures use unique row and
+storage identifiers, but their setup and teardown still share one remote
+Supabase Auth, database, and Storage service. Serial file execution prevents
+simultaneous fixture factories from producing intermittent parent-hook
+failures while keeping the fast, network-free unit files parallel.
 
 ## What's covered
 
@@ -234,7 +244,9 @@ cleanly otherwise), one spec per documented user flow:
   test run: two organizations, internal admin/PM/team member, two clients
   each with owner/manager/viewer, two projects, real uploaded files, and a
   revision — all with unique, run-scoped values (via `testRunId()`) so
-  parallel/repeated runs never collide.
+  repeated runs never collide. Integration suite files run serially because
+  their otherwise-isolated fixtures still use the same remote Supabase
+  Auth/database/storage services.
 - **E2E tests** (`global-setup.ts`) instead use a small set of **fixed,
   idempotent** fixtures (looked up by a documented, unique slug/email/title
   before creating), because Playwright's global setup runs once per test
@@ -266,7 +278,9 @@ cleanly otherwise), one spec per documented user flow:
 
 Every integration test authenticates its own client per test (no shared
 mutable session across tests), uses unique values, and cleans up in a
-`finally`/`after`/`afterAll` hook. Playwright's config runs with
+`finally`/`after`/`afterAll` hook. Node runs the three integration files with
+`--test-concurrency=1`, while each file retains normal process isolation.
+Playwright's config runs with
 `fullyParallel: false` and `workers: 1` for the Phase 8 project specifically
 so specs never race each other over the shared fixed E2E fixtures, while
 each spec's own assertions still target ids/values unique to that spec.
