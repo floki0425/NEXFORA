@@ -1110,8 +1110,16 @@ Create post-launch recurring client operations.
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Implementation note:
+
+The Phase 10 application, migrations, and local test coverage are implemented.
+Completion remains blocked until the authorization/integrity follow-up migration
+is reviewed and applied to TEST, the live catalog and migration history are
+verified, database types are regenerated from TEST, and the live Phase 10 suites
+and regressions pass. See `docs/PHASE_10_SUPPORT_SUBSCRIPTIONS_SETUP.md`.
 
 Version:
 

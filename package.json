@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npm run test:core && npm run test:phase8 && npm run test:phase9",
+    "test": "npm run test:core && npm run test:phase8 && npm run test:phase9 && npm run test:phase10",
     "test:core": "node --test tests/auth/password-recovery.test.mjs tests/leads/lead-foundation.test.mjs tests/clients/client-management.test.mjs tests/projects/project-management.test.mjs tests/proposals/proposal-system.test.mjs tests/portal/client-portal.test.mjs tests/files/project-files.test.mjs tests/revisions/revisions.test.mjs",
     "test:phase8:unit": "node --test tests/phase8/unit/file-validation.test.mjs tests/phase8/unit/storage-path.test.mjs tests/phase8/unit/revision-validation.test.mjs tests/phase8/unit/revision-transitions.test.mjs tests/phase8/unit/error-and-cleanup.test.mjs",
     "test:phase8:integration": "node --test --test-concurrency=1 tests/phase8/integration/rls-files-and-revisions.test.mjs tests/phase8/integration/storage.test.mjs tests/phase8/integration/revision-workflow.test.mjs",
@@ -17,9 +17,16 @@
     "test:phase9": "node --test tests/phase9/unit/schemas-and-format.test.mjs tests/phase9/unit/permissions.test.mjs tests/phase9/unit/paymongo-webhook-signature.test.mjs tests/phase9/unit/paymongo-money.test.mjs tests/phase9/unit/migration-invoice-numbering.test.mjs tests/phase9/unit/migration-status-and-void-rules.test.mjs tests/phase9/unit/migration-payment-and-rls-rules.test.mjs tests/phase9/integration/invoice-lifecycle.test.mjs tests/phase9/integration/rls-invoices-and-payments.test.mjs tests/phase9/integration/manual-payments.test.mjs tests/phase9/integration/paymongo-and-webhook.test.mjs tests/phase9/integration/overdue-status.test.mjs",
     "test:e2e:phase9": "playwright test --config=playwright.phase9.config.ts",
     "test:phase9:all": "npm run test:phase9 && npm run test:e2e:phase9",
+    "test:phase10:unit": "node --test --test-isolation=none tests/phase10/unit/migration-schema-and-numbering.test.mjs tests/phase10/unit/migration-support-workflow.test.mjs tests/phase10/unit/migration-subscription-ledger.test.mjs tests/phase10/unit/migration-rls-authorization.test.mjs tests/phase10/unit/schemas-permissions-and-format.test.mjs",
+    "test:phase10:integration": "node --test --test-isolation=none --test-concurrency=1 tests/phase10/integration/support-workflow.test.mjs tests/phase10/integration/subscriptions-and-rls.test.mjs",
+    "test:phase10": "npm run test:phase10:unit && npm run test:phase10:integration",
+    "dev:e2e:phase10": "node scripts/start-phase10-e2e-server.mjs",
+    "test:e2e:phase10": "playwright test --config=playwright.phase10.config.ts",
+    "test:phase10:all": "npm run test:phase10 && npm run test:e2e:phase10",
     "reset-owner-password": "node --env-file=.env.local scripts/reset-owner-password.mjs",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:e2e:phase9": "node scripts/start-phase9-e2e-server.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.3",

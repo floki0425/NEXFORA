@@ -1,7 +1,9 @@
 import {
   FolderKanban,
   LayoutDashboard,
+  LifeBuoy,
   Receipt,
+  Repeat2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -12,10 +14,9 @@ export interface PortalNavigationItem {
 }
 
 // Files and Revisions (Phase 8) are accessed from within a project's detail
-// page, not as top-level nav destinations, so they are deliberately absent
-// here. Support (a later phase) remains out of scope and must not appear as
-// a dead link. Invoices (Phase 9) span multiple projects (or none), so it
-// gets its own top-level entry like Projects.
+// page, not as top-level nav destinations. Invoices, Support, and
+// Subscriptions span multiple projects (or none), so each is a top-level
+// portal destination.
 export const PORTAL_NAVIGATION: readonly PortalNavigationItem[] = [
   {
     label: "Dashboard",
@@ -31,6 +32,16 @@ export const PORTAL_NAVIGATION: readonly PortalNavigationItem[] = [
     label: "Invoices",
     href: "/portal/invoices",
     icon: Receipt,
+  },
+  {
+    label: "Support",
+    href: "/portal/support",
+    icon: LifeBuoy,
+  },
+  {
+    label: "Subscriptions",
+    href: "/portal/subscriptions",
+    icon: Repeat2,
   },
 ];
 

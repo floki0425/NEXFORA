@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { requireInternalMember } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -126,8 +124,6 @@ export async function transitionRevisionStatusAction(
       };
     }
 
-    revalidatePath("/admin/revisions");
-    revalidatePath(`/admin/revisions/${idResult.data}`);
     return { ok: true, message: "Revision status updated." };
   } catch {
     console.error("Revision status update authorization or persistence failed.");
@@ -213,8 +209,6 @@ export async function assignRevisionAction(
       return { ok: false, message: GENERIC_ERROR };
     }
 
-    revalidatePath("/admin/revisions");
-    revalidatePath(`/admin/revisions/${idResult.data}`);
     return { ok: true, message: "Revision assignment updated." };
   } catch {
     console.error("Revision assignment authorization or persistence failed.");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -28,23 +28,29 @@ export function InternalFileUploadForm({
   );
   const [state, formAction, isPending] = useActionState(
     async (_previous: FileActionResult | null, formData: FormData) => {
-      const result = await uploadInternalProjectFileAction(
-        projectId,
-        formData,
-      );
-      if (result.ok) {
-        // Prepare a fresh idempotency key for the next upload attempt; a
-        // failed attempt keeps the same key so a retry of the same file is
-        // treated as one logical upload, not a duplicate.
-        setIdempotencyKey(crypto.randomUUID());
-      }
-      return result;
+      return uploadInternalProjectFileAction(projectId, formData);
     },
     INITIAL_STATE,
   );
 
+  useEffect(() => {
+    if (!state?.ok) {
+      return;
+    }
+
+    // Commit the action result first, then start a fresh document request.
+    // In production, refreshing this large file list inside the action's
+    // RSC transition can leave the form pending or retain the old list even
+    // though storage and metadata have already succeeded.
+    window.location.reload();
+  }, [state]);
+
+  // No explicit encType on the form below: when `action` is a function,
+  // React submits the form itself as FormData (multipart automatically when
+  // it carries a file) and renders no encType attribute, so setting one
+  // produced a real SSR/client hydration mismatch.
   return (
-    <form action={formAction} className="space-y-4" encType="multipart/form-data">
+    <form action={formAction} className="space-y-4">
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <FormField id="file" label="File" required>
         <input

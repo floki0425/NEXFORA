@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ export function RevisionStatusForm({
   revisionId,
   currentStatus,
 }: RevisionStatusFormProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const next = REVISION_NEXT_INTERNAL_TRANSITION[currentStatus];
@@ -47,7 +45,7 @@ export function RevisionStatusForm({
               setError(response.message);
               return;
             }
-            router.refresh();
+            window.location.reload();
           });
         }}
       >
