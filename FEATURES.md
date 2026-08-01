@@ -2708,8 +2708,13 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
+
+Admin-only (`super_admin`/`admin`), via a direct authenticated insert under
+RLS (`invoices_insert_invoice_managers`) — mirrors proposal creation's
+architecture. `organization_id`/`created_by` are server-resolved; client
+and project ownership are cross-checked against the organization.
 
 ---
 
@@ -2730,8 +2735,13 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
+
+`subtotal` is trigger-recomputed from `invoice_items` on every insert/
+update/delete (never trusted from the browser); `line_total` is a
+generated column (`quantity * unit_price`). Editable only while the parent
+invoice is a draft.
 
 ---
 
@@ -2752,7 +2762,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Format example:
@@ -2760,6 +2770,10 @@ Format example:
 ```text
 NXF-INV-2026-0001
 ```
+
+`private.next_invoice_number()` — race-safe atomic upsert-and-increment
+counter per `(organization_id, number_year)`, independent from proposal
+numbering. Assigned once, only inside `send_invoice()`.
 
 ---
 
@@ -2780,8 +2794,14 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+`send_invoice()` requires ≥1 line item, a positive total, and a non-past
+due date; assigns the official number and `issue_date` atomically. Emails
+via the centralized `sendInvoiceEmail()` (Resend), never from a component;
+degrades to a safe, distinct message when email is not configured rather
+than failing the send.
 
 ---
 
@@ -2802,8 +2822,14 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+`/portal/invoices`, `/portal/invoices/[invoiceId]` — read exclusively
+through `get_client_invoices()`/`get_client_invoice_detail()` (no
+client-facing RLS policy on the base table, matching Phase 7/8's design).
+A draft invoice is never returned. Opening a sent invoice idempotently
+sets `viewed_at`.
 
 ---
 
@@ -2824,10 +2850,16 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Requires audit log.
+
+`record_manual_payment()` — admin-only, `recorded_by`/`created_at` form the
+audit trail. Rejects any amount exceeding the remaining balance (no
+overpayment support). Retry-safe via a client-generated idempotency key
+that is reused across resubmits of the same attempt, never regenerated
+server-side.
 
 ---
 
@@ -2848,8 +2880,12 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+`amount_paid` is trigger-maintained from the sum of `paid` payments;
+`balance_due` is a generated column (`total - amount_paid`). Status derives
+to `partial` automatically once `0 < balance_due < total`.
 
 ---
 
@@ -2870,8 +2906,14 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+`refresh_overdue_invoices()` (called from the admin list/detail queries) is
+a cheap, idempotent, organization-scoped update — no scheduler required.
+The client-facing read functions additionally compute the same overdue
+condition live (`private.effective_invoice_status()`), so the portal is
+never stale even between refreshes.
 
 ---
 
@@ -2894,8 +2936,15 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+Hosted PayMongo Checkout Sessions (redirect flow, no card data touches
+Nexfora's servers). `start_paymongo_checkout()` re-verifies the
+amount/currency server-side and enforces one active session per invoice.
+No live PayMongo credentials were available to exercise a real session —
+see `docs/PHASE_9_INVOICES_PAYMENTS_SETUP.md` section 17 for the manual
+verification checklist.
 
 ---
 
@@ -2916,7 +2965,7 @@ P0
 Status:
 
 ```text
-planned
+testing
 ```
 
 Must include:
@@ -2927,6 +2976,13 @@ Idempotency
 Server-side status update
 Audit
 ```
+
+`/api/webhooks/paymongo` — HMAC-SHA256 timestamp-prefixed signature
+verification (rejects with 400 on failure), idempotent on
+`provider_event_id`, settles only via the service-role-only
+`reconcile_paymongo_webhook_event()`. Never logs secrets or raw payloads.
+Signature scheme implemented per PayMongo's documented format but not yet
+verified against a live webhook delivery (no credentials available).
 
 ---
 
@@ -2947,8 +3003,13 @@ P1
 Status:
 
 ```text
-planned
+testing
 ```
+
+`reconcile_paymongo_webhook_event()` locks the matching payment row,
+verifies amount/currency against what was recorded at session-creation
+time, and finalizes exactly one payment — a mismatch marks the payment
+`failed` rather than ever silently settling the invoice.
 
 ---
 

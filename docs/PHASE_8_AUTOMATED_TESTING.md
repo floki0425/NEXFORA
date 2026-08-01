@@ -59,7 +59,7 @@ placeholders are documented in `.env.example`.
 | `TEST_SUPABASE_URL` | unit (n/a), integration, E2E | URL of the dedicated test Supabase project |
 | `TEST_SUPABASE_PUBLISHABLE_KEY` | integration, E2E | Publishable (anon) key — the same key the real app uses client-side |
 | `TEST_SUPABASE_SECRET_KEY` | integration, E2E (setup/cleanup only) | Service-role key, used only for fixture setup/teardown and by `global-setup.ts` |
-| `TEST_APP_URL` | E2E | Base URL of the running app under test, pointed at the same test project |
+| `TEST_APP_URL` | E2E | Local origin where Playwright starts the app under test |
 | `TEST_INTERNAL_ADMIN_EMAIL` / `TEST_INTERNAL_ADMIN_PASSWORD` | E2E | Fixed internal admin test user |
 | `TEST_CLIENT_OWNER_EMAIL` / `TEST_CLIENT_OWNER_PASSWORD` | E2E | Fixed Client A "owner" test user |
 | `TEST_CLIENT_VIEWER_EMAIL` / `TEST_CLIENT_VIEWER_PASSWORD` | E2E | Fixed Client A "viewer" test user |
@@ -93,6 +93,22 @@ to load first. The load uses `override: false`, so a real value already
 present in `process.env` (as in CI, where secrets are injected directly)
 always wins over the file — the file only fills in whatever CI didn't
 already set.
+
+For E2E runs, `scripts/start-phase8-e2e-server.mjs` reads that shared test
+configuration and starts `next dev` directly through Node. It maps only these
+app-facing variables in the child process:
+
+| Test variable | Next.js application variable |
+| --- | --- |
+| `TEST_APP_URL` | `NEXT_PUBLIC_APP_URL` |
+| `TEST_SUPABASE_URL` | `NEXT_PUBLIC_SUPABASE_URL` |
+| `TEST_SUPABASE_PUBLISHABLE_KEY` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+| `TEST_SUPABASE_SECRET_KEY` | `SUPABASE_SECRET_KEY` (server-only) |
+
+The mapped child-process values take priority when Next.js also reads
+`.env.local`. The service-role secret is never assigned to a `NEXT_PUBLIC_*`
+name. Missing or placeholder E2E variables stop the launcher early with a
+message containing variable names only, never their values.
 
 A variable is treated as **not configured** (triggering a skip, identical to
 being unset) if it is missing, blank, or matches a known placeholder value
@@ -140,15 +156,16 @@ clients, and project rather than creating duplicates.
 
 ```bash
 npm run test:phase8       # Phase 8 unit + integration tests (node --test)
+npm run dev:e2e:phase8    # supporting test-env Next.js server (normally automatic)
 npm run test:e2e:phase8   # Phase 8 Playwright E2E specs
 npm run test:phase8:all   # both, in sequence
 npm test                  # the full repository suite, Phase 8 included
 ```
 
-`test:e2e:phase8` requires the app under test to already be running (e.g.
-`npm run dev`) against the same `TEST_SUPABASE_URL` project — Playwright's
-config does not start it, since it cannot safely infer which environment
-variables to launch the dev server with.
+`test:e2e:phase8` starts and stops the application automatically through
+Playwright's `webServer` configuration. Do not start `npm run dev` first;
+`reuseExistingServer: false` ensures an app using `.env.local` cannot be
+silently reused for the test run.
 
 ## What's covered
 

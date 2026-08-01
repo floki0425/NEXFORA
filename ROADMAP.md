@@ -878,11 +878,14 @@ in_progress
 
 Implementation summary: migration, RLS/storage policies, RPC functions,
 feature modules, admin/portal UI, and tests are written (see
-`docs/PHASE_8_FILES_REVISIONS_SETUP.md`). The migration has not yet been
-applied to a Supabase project in this session (no live database access was
-available), so `npm run typecheck`/`npm run build` will not pass and manual
-verification has not been performed until a maintainer applies it and
-regenerates `src/types/database.ts`.
+`docs/PHASE_8_FILES_REVISIONS_SETUP.md`). The migration (plus five
+follow-up storage-RLS fixes found by testing against a real project) has
+been applied to both the dedicated test project and the real dev project,
+`src/types/database.ts` is regenerated, and `npm run typecheck`/
+`npm run build` both pass. Manual verification is complete: the full
+automated suite passes (unit, integration, and Playwright E2E — internal
+admin, client owner, and client viewer flows, including cross-client
+access denial), documented in `docs/PHASE_8_AUTOMATED_TESTING.md`.
 
 Version:
 
@@ -1000,8 +1003,22 @@ Centralize billing and payment tracking.
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Implementation summary: migration (`invoices`, `invoice_items`, `payments`,
+official numbering, status-derivation triggers, RLS, PayMongo/webhook RPC
+functions), feature modules, admin/portal UI, PayMongo provider boundary,
+webhook route, and tests are written (see
+`docs/PHASE_9_INVOICES_PAYMENTS_SETUP.md`). The migration has not yet been
+applied to a Supabase project in this session (no live database access was
+available), so `npm run typecheck`/`npm run build` will not pass and
+integration/E2E tests will skip until a maintainer applies it and
+regenerates `src/types/database.ts`. No live PayMongo credentials were
+available either — the provider boundary and webhook signature
+verification are implemented and unit-tested against PayMongo's documented
+API/webhook shape, but have not been exercised against a real PayMongo
+session (see the setup doc's manual verification checklist).
 
 Version:
 

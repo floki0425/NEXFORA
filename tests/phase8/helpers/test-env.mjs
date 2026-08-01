@@ -34,6 +34,7 @@ import { config as loadEnv } from "dotenv";
 loadEnv({
   path: path.resolve(process.cwd(), ".env.test.local"),
   override: false,
+  quiet: true,
 });
 
 // Known placeholder values from .env.example / docs so a copy-pasted template

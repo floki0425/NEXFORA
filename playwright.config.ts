@@ -1,18 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
-import { hasPhase8E2EEnv } from "./tests/phase8/helpers/test-env.mjs";
-import path from "node:path";
-import { config as loadEnv } from "dotenv";
 
-loadEnv({
-  path: path.resolve(process.cwd(), ".env.test.local"),
-});
+import { getPhase8E2EConfig } from "./tests/phase8/helpers/test-env.mjs";
+
+const phase8Config = getPhase8E2EConfig();
+const phase8AppUrl = phase8Config?.appUrl ?? "http://localhost:3000";
 
 // Phase 8 browser E2E suite only. See docs/PHASE_8_AUTOMATED_TESTING.md for
-// required environment variables and test-project/test-user setup. This
-// config intentionally does not start a dev server itself — the app under
-// test must already be running against the same Supabase test project as
-// TEST_SUPABASE_URL (see the docs for exactly how), since Playwright cannot
-// safely infer which environment variables to launch it with.
+// required environment variables and test-project/test-user setup. The
+// repository-owned server launcher maps the dedicated TEST_SUPABASE_* values
+// to the exact app-facing names before Next.js loads .env.local.
 export default defineConfig({
   testDir: "./tests/phase8/e2e",
   // The longer flows (internal-admin-flow, client-owner-flow) chain many
@@ -46,11 +42,17 @@ export default defineConfig({
   retries: 1,
   workers: 1,
   reporter: [["list"]],
-  globalSetup: hasPhase8E2EEnv()
+  globalSetup: phase8Config
     ? "./tests/phase8/e2e/global-setup.ts"
     : undefined,
+  webServer: {
+    command: "npm run dev:e2e:phase8",
+    url: phase8AppUrl,
+    reuseExistingServer: false,
+    timeout: 120_000,
+  },
   use: {
-    baseURL: process.env.TEST_APP_URL ?? "http://localhost:3000",
+    baseURL: phase8AppUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     actionTimeout: 25_000,

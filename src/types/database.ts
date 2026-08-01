@@ -176,6 +176,154 @@ export type Database = {
           },
         ]
       }
+      invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          line_total: number | null
+          quantity: number
+          sort_order: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          line_total?: number | null
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          line_total?: number | null
+          quantity?: number
+          sort_order?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number
+          balance_due: number | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          discount: number
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          issue_date: string | null
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          project_id: string | null
+          sent_at: string | null
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          viewed_at: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount_paid?: number
+          balance_due?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          discount?: number
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string | null
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          project_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          viewed_at?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          balance_due?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          discount?: number
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string | null
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          project_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          viewed_at?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_project_org_client_fkey"
+            columns: ["project_id", "organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "organization_id", "client_id"]
+          },
+        ]
+      }
       lead_activities: {
         Row: {
           activity_type: string
@@ -455,6 +603,91 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          currency: string
+          id: string
+          idempotency_key: string | null
+          invoice_id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          payment_method: string | null
+          provider: string
+          provider_event_id: string | null
+          provider_reference: string | null
+          recorded_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key?: string | null
+          invoice_id: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          payment_method?: string | null
+          provider?: string
+          provider_event_id?: string | null
+          provider_reference?: string | null
+          recorded_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          idempotency_key?: string | null
+          invoice_id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          provider?: string
+          provider_event_id?: string | null
+          provider_reference?: string | null
+          recorded_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_org_client_fkey"
+            columns: ["invoice_id", "organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id", "organization_id", "client_id"]
+          },
+          {
+            foreignKeyName: "payments_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1272,6 +1505,30 @@ export type Database = {
         Args: { p_token_hash: string }
         Returns: Json
       }
+      get_client_invoice_detail: {
+        Args: { target_invoice_id: string }
+        Returns: Json
+      }
+      get_client_invoices: {
+        Args: never
+        Returns: {
+          amount_paid: number
+          balance_due: number
+          created_at: string
+          currency: string
+          discount: number
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          paid_at: string
+          sent_at: string
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+        }[]
+      }
       get_client_project_detail: {
         Args: { target_project_id: string }
         Returns: Json
@@ -1329,6 +1586,35 @@ export type Database = {
           updated_at: string
         }[]
       }
+      reconcile_paymongo_webhook_event: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_event_status: string
+          p_provider_event_id: string
+          p_provider_reference: string
+        }
+        Returns: {
+          outcome: string
+        }[]
+      }
+      record_manual_payment: {
+        Args: {
+          p_amount: number
+          p_idempotency_key: string
+          p_notes: string
+          p_paid_date: string
+          p_payment_method: string
+          p_provider_reference: string
+          target_invoice_id: string
+        }
+        Returns: {
+          balance_due: number
+          invoice_status: string
+          payment_id: string
+        }[]
+      }
+      refresh_overdue_invoices: { Args: never; Returns: undefined }
       reissue_proposal_access_token: {
         Args: {
           p_token_expires_at: string
@@ -1351,6 +1637,13 @@ export type Database = {
         Args: { target_invitation_id: string }
         Returns: undefined
       }
+      send_invoice: {
+        Args: { target_invoice_id: string }
+        Returns: {
+          invoice_number: string
+          issue_date: string
+        }[]
+      }
       send_proposal: {
         Args: {
           p_token_expires_at: string
@@ -1360,6 +1653,18 @@ export type Database = {
         Returns: {
           proposal_number: string
           version_number: number
+        }[]
+      }
+      start_paymongo_checkout: {
+        Args: {
+          p_amount: number
+          p_checkout_url: string
+          p_currency: string
+          p_provider_reference: string
+          target_invoice_id: string
+        }
+        Returns: {
+          payment_id: string
         }[]
       }
       submit_project_inquiry: {
@@ -1385,6 +1690,12 @@ export type Database = {
         }[]
       }
       view_proposal_by_token: { Args: { p_token_hash: string }; Returns: Json }
+      void_invoice: {
+        Args: { target_invoice_id: string }
+        Returns: {
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

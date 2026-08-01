@@ -1,4 +1,9 @@
-import { FolderKanban, LayoutDashboard, type LucideIcon } from "lucide-react";
+import {
+  FolderKanban,
+  LayoutDashboard,
+  Receipt,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface PortalNavigationItem {
   label: string;
@@ -6,8 +11,11 @@ export interface PortalNavigationItem {
   icon: LucideIcon;
 }
 
-// Only active Phase 7 functionality is listed — Files, Revisions, Invoices,
-// and Support belong to later phases and must not appear as dead links.
+// Files and Revisions (Phase 8) are accessed from within a project's detail
+// page, not as top-level nav destinations, so they are deliberately absent
+// here. Support (a later phase) remains out of scope and must not appear as
+// a dead link. Invoices (Phase 9) span multiple projects (or none), so it
+// gets its own top-level entry like Projects.
 export const PORTAL_NAVIGATION: readonly PortalNavigationItem[] = [
   {
     label: "Dashboard",
@@ -18,6 +26,11 @@ export const PORTAL_NAVIGATION: readonly PortalNavigationItem[] = [
     label: "Projects",
     href: "/portal/projects",
     icon: FolderKanban,
+  },
+  {
+    label: "Invoices",
+    href: "/portal/invoices",
+    icon: Receipt,
   },
 ];
 
