@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const CONTROL_CHAR_PATTERN = /[\u0000-\u001F\u007F]/;
+
 export const PASSWORD_RESET_SUCCESS_MESSAGE =
   "If an account exists for this email, a reset link has been sent.";
 
@@ -51,6 +53,28 @@ export function isValidAuthCallbackCode(code: string | null): code is string {
     code &&
       code.length <= 2048 &&
       !/[\u0000-\u001F\u007F]/.test(code),
+  );
+}
+
+export const RECOVERY_OTP_TYPES = ["recovery"] as const;
+export type RecoveryOtpType = (typeof RECOVERY_OTP_TYPES)[number];
+
+export function isValidRecoveryOtpType(
+  value: string | null,
+): value is RecoveryOtpType {
+  return (
+    value !== null &&
+    (RECOVERY_OTP_TYPES as readonly string[]).includes(value)
+  );
+}
+
+export function isValidAuthCallbackTokenHash(
+  value: string | null,
+): value is string {
+  return Boolean(
+    value &&
+      value.length <= 2048 &&
+      !CONTROL_CHAR_PATTERN.test(value),
   );
 }
 

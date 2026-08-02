@@ -12,7 +12,8 @@
     "test:phase8:all": "npm run test:phase8 && npm run test:e2e:phase8",
     "reset-owner-password": "node --env-file=.env.local scripts/reset-owner-password.mjs",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:core": "node --experimental-test-module-mocks --import ./tests/support/register-app-alias-loader.mjs --test tests/auth/password-recovery.test.mjs tests/auth/callback-route.test.mjs tests/auth/update-password-action.test.mjs tests/leads/lead-foundation.test.mjs tests/clients/client-management.test.mjs tests/projects/project-management.test.mjs tests/proposals/proposal-system.test.mjs tests/portal/client-portal.test.mjs tests/files/project-files.test.mjs tests/revisions/revisions.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.3",
