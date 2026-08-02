@@ -17,6 +17,7 @@
 /blob-report
 /playwright/.cache
 tests/phase8/e2e/.e2e-fixture-ids.json
+tests/phase9/e2e/.e2e-fixture-ids.json
 
 # next.js
 /.next/

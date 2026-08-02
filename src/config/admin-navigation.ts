@@ -4,6 +4,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   ListChecks,
+  Receipt,
   Settings,
   UsersRound,
   type LucideIcon,
@@ -55,6 +56,11 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     label: "Proposals",
     href: "/admin/proposals",
     icon: FileText,
+  },
+  {
+    label: "Invoices",
+    href: "/admin/invoices",
+    icon: Receipt,
   },
   {
     label: "Revisions",
