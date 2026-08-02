@@ -251,8 +251,13 @@ export async function updatePassword(
     };
   }
 
+  // Global scope revokes every session's refresh token, not just this
+  // browser's, since the account's other active sessions were not
+  // necessarily compromised by whoever triggered this reset. This does not
+  // instantly invalidate an already-issued access token before its own
+  // short expiry — see docs/PHASE_1_SETUP.md.
   const { error: signOutError } = await supabase.auth.signOut({
-    scope: "local",
+    scope: "global",
   });
 
   if (signOutError) {

@@ -73,20 +73,80 @@ Public signup must remain disabled for Phase 1. Internal users are created by a
 Supabase project administrator and receive an organization membership through
 the privileged bootstrap process below.
 
-Password recovery uses the PKCE flow:
+Password recovery supports two callback handoffs, both routed through the
+same `/auth/callback` endpoint:
 
 ```text
 /auth/forgot-password
-â†’
-/auth/callback?next=/auth/update-password
-â†’
+->
+/auth/callback?token_hash=<hash>&type=recovery&next=/auth/update-password
+   (or ?code=<auth_code>&next=/auth/update-password for the PKCE default)
+->
 /auth/update-password
 ```
+
+The `next=/auth/update-password` parameter shown in both handoffs above is
+accepted but not authoritative: after a successful verification the callback
+always continues to `/auth/update-password`, regardless of the `next` value
+supplied. A recovery link can never be redirected into `/admin`, `/portal`,
+or any other internal route this way.
+
+Set the **Authentication > Email Templates > Reset Password** link to the
+`token_hash` handoff below. This is the recommended template: it does not
+depend on a `code_verifier` cookie from the browser that requested the
+reset, so the recovery link also works when opened in a different browser,
+device, or profile.
+
+```html
+<h2>Reset your Nexfora password</h2>
+<p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/auth/update-password">Reset password</a></p>
+```
+
+The Supabase-default `{{ .ConfirmationURL }}` template (PKCE `?code=`
+handoff) is also supported by the callback route, but it only completes
+successfully when the reset link is opened in the same browser that
+submitted the forgot-password form, because the PKCE exchange needs the
+`code_verifier` cookie set at request time. Prefer the `token_hash` template
+above unless there is a specific reason to keep the default.
+
+**Trade-off: the direct `token_hash` link can be consumed before the user
+clicks it.** Because the recommended template is a plain GET link, anything
+that fetches the URL spends the one-time token — not only the user's own
+click. Email security scanners and link-prefetching proxies (corporate mail
+gateways, some antivirus products, certain webmail "link protection"
+features) may issue their own request to a link as soon as the email is
+delivered or opened, before the user ever clicks it. If that happens, the
+token is already spent and the user's real click lands on the failure path
+instead of the update-password page.
+
+- Disable email tracking/click-rewriting for the Reset Password template if
+  the mail provider offers it. Rewritten/tracked links are the most common
+  source of automated prefetching.
+- Before relying on this flow in production, send a real reset email through
+  the production mail path and confirm the first human click still succeeds.
+  Do not assume a local test proves the production mail path is scanner-free.
+- If the target mail environment is known to use aggressive link scanning
+  (common with some corporate email gateways), do not treat this direct
+  `token_hash` callback as production-ready as-is. Add a user-initiated
+  confirmation interstitial (a page that requires a click before the token is
+  verified) or move to an OTP-code-entry flow instead of a bare GET link.
+
+This is a known, accepted trade-off for Phase 1, not a resolved issue. Treat
+this callback design as unverified for production until prefetch behavior has
+actually been tested against the target mail environment.
 
 The callback URL must be allow-listed exactly. Do not add a wildcard production
 redirect. A successful callback also issues a short-lived, server-signed,
 HttpOnly recovery marker. Both the update page and the password mutation
 require the verified Supabase user session and this marker.
+
+A successful password update signs out every session for that user (Supabase
+`signOut({ scope: "global" })`), not just the browser that performed the
+reset — so an attacker who is silently signed in elsewhere is also signed
+out. This revokes refresh tokens; it does not instantly invalidate an
+already-issued access token before its own short expiry. Session lifetime
+configuration in the Supabase Dashboard is what bounds that residual window,
+not this application.
 
 Supabase's hosted email service has a low development sending limit. A failed
 request may return `over_email_send_rate_limit`; wait for the limit to reset or
@@ -377,12 +437,30 @@ Verify all of the following:
 - [ ] A valid password-recovery request reaches the configured email inbox.
 - [ ] An unknown recovery email receives the same neutral browser confirmation
       and does not reveal whether an account exists.
+- [ ] Requesting a reset and opening the link in the same browser completes
+      the update and lands on `/auth/login?password_updated=true`.
+- [ ] Requesting a reset and opening the link in a different browser, device,
+      or profile also completes the update successfully.
 - [ ] Invalid and expired recovery links return safely to the forgot-password
       page.
 - [ ] Opening `/auth/update-password` without a recovery session returns safely
       to the forgot-password page.
 - [ ] A successful password update signs the browser out and shows the login
       confirmation at `/auth/login?password_updated=true`.
+- [ ] A successful password update also signs out an unrelated, already-active
+      session for that same user on a second device/browser (global
+      sign-out). Note that a session's already-issued access token can remain
+      valid until its own configured expiry even after this.
+- [ ] Opening a real password-recovery email link is the actual first
+      consumer of the token in the target mail environment: send a reset
+      email through the real production/staging mail path and confirm the
+      first human click succeeds, with no prior automated hit having already
+      spent the token (a same-day scanner hit surfaces as an unexpected
+      `invalid_reset_link` failure on the first real click).
+- [ ] Opening a recovery link in a browser that is already signed in as a
+      different user results in the session becoming the recovery link's
+      verified user, not a merged or mismatched identity, and the flow
+      cannot be used to update the previously signed-in user's password.
 - [ ] The owner can sign in and access `/admin`.
 - [ ] Logout clears the session, and a direct `/admin` request is denied
       afterward.
