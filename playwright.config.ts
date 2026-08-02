@@ -11,35 +11,18 @@ const phase8AppUrl = phase8Config?.appUrl ?? "http://localhost:3000";
 // to the exact app-facing names before Next.js loads .env.local.
 export default defineConfig({
   testDir: "./tests/phase8/e2e",
-  // The longer flows (internal-admin-flow, client-owner-flow) chain many
-  // sequential real-network round-trips (sign-in, multiple uploads, a
-  // download, several navigations, several actions) against a real remote
-  // Supabase project, and each first hit to a given dynamic route in
-  // `next dev` also pays a one-time Turbopack compile cost that a
-  // production build wouldn't have. 30s was observed to be too tight for
-  // these — failures showed "Test timeout of 30000ms exceeded" mid-flow,
-  // not a genuine hang. 150s gives real headroom without masking an actual
-  // hang (a truly stuck test still fails, just later).
+  // The longer flows chain many sequential real-network round-trips against
+  // the dedicated TEST project. The production E2E server removes dev-mode
+  // compilation from this budget; 150s remains the finite workflow backstop.
   timeout: 150_000,
   expect: {
-    // Individual assertions/actions (e.g. the first render of a route that
-    // hasn't been compiled yet this run) can also exceed the 5s default in
-    // dev mode; the overall per-test timeout above is still the backstop
-    // against a genuine hang. Observed real server-action-plus-revalidation
-    // round trips up to 18.6s against the remote test project (the action
-    // itself took under 4s — the rest is `next dev`'s own re-render/
-    // revalidation overhead) — 25s gives comfortable headroom above the
-    // observed worst case without being unbounded.
+    // Remote server actions may exceed Playwright's 5s default. The overall
+    // per-test timeout above remains the backstop against a genuine hang.
     timeout: 25_000,
   },
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
-  // Retries were CI-only originally. Observed real, variable server-action
-  // + revalidation latency against the remote test project (occasionally
-  // exceeding even a generous per-assertion timeout) that a single retry
-  // reliably clears — this is normal variance testing against a live
-  // external service, not a masked defect, so 1 retry locally too.
-  retries: 1,
+  retries: 0,
   workers: 1,
   reporter: [["list"]],
   globalSetup: phase8Config

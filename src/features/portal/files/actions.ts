@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { validateUploadedFile } from "@/features/files/schemas";
@@ -142,7 +141,6 @@ export async function uploadPortalProjectFileAction(
 
     if (metadataError) {
       if (metadataError.code === "23505") {
-        revalidatePath(`/portal/projects/${idResult.data}`);
         return { ok: true, message: "File uploaded." };
       }
 
@@ -154,7 +152,6 @@ export async function uploadPortalProjectFileAction(
       return { ok: false, message: GENERIC_ERROR };
     }
 
-    revalidatePath(`/portal/projects/${idResult.data}`);
     return { ok: true, message: "File uploaded." };
   } catch {
     console.error("Portal file upload authorization or persistence failed.");

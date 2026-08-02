@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireInternalMember } from "@/lib/auth/server";
@@ -166,7 +165,6 @@ export async function uploadInternalProjectFileAction(
         // A genuine retry: metadata for this idempotency key already
         // exists, so the just-uploaded object is the correct one — nothing
         // to clean up.
-        revalidatePath(`/admin/projects/${idResult.data}/files`);
         return { ok: true, message: "File uploaded." };
       }
 
@@ -180,7 +178,6 @@ export async function uploadInternalProjectFileAction(
       return { ok: false, message: GENERIC_ERROR };
     }
 
-    revalidatePath(`/admin/projects/${idResult.data}/files`);
     return { ok: true, message: "File uploaded." };
   } catch {
     console.error("Project file upload authorization or persistence failed.");

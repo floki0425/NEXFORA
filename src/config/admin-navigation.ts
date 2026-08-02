@@ -3,8 +3,10 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  LifeBuoy,
   ListChecks,
   Receipt,
+  Repeat2,
   Settings,
   UsersRound,
   type LucideIcon,
@@ -22,6 +24,12 @@ export interface AdminNavigationItem {
 export const SETTINGS_ROLES = [
   "super_admin",
   "admin",
+] as const satisfies readonly InternalRole[];
+
+export const SUBSCRIPTION_ROLES = [
+  "super_admin",
+  "admin",
+  "project_manager",
 ] as const satisfies readonly InternalRole[];
 
 export const INTERNAL_ROLE_LABELS: Record<InternalRole, string> = {
@@ -66,6 +74,17 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     label: "Revisions",
     href: "/admin/revisions",
     icon: ListChecks,
+  },
+  {
+    label: "Support",
+    href: "/admin/support",
+    icon: LifeBuoy,
+  },
+  {
+    label: "Subscriptions",
+    href: "/admin/subscriptions",
+    icon: Repeat2,
+    visibleTo: SUBSCRIPTION_ROLES,
   },
   {
     label: "Settings",

@@ -3032,7 +3032,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 ---
@@ -3054,7 +3054,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Statuses:
@@ -3087,7 +3087,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 ---
@@ -3111,7 +3111,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 ---
@@ -3133,7 +3133,7 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 ---
@@ -3155,7 +3155,7 @@ P2
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 ---

@@ -56,13 +56,15 @@ test.describe("Internal admin: create, edit, and send an invoice", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Send invoice" }).click();
 
-    // The official number being assigned and shown as the page heading is
-    // the unambiguous success signal — the exact confirmation message text
-    // varies depending on whether Resend is configured in this environment
-    // (see sendInvoiceAction), so it is deliberately not asserted here.
+    // The action result proves the send RPC completed even when optional email
+    // delivery fails in a test environment. Reload before checking the heading
+    // so the assertion reads persisted server state rather than a pending
+    // client-side router refresh.
+    await expect(page.getByRole("status")).toContainText(/invoice was sent|invoice sent/i);
+    await page.reload();
     await expect(
       page.getByRole("heading", { name: /^NXF-INV-\d{4}-\d{4,}$/ }),
-    ).toBeVisible({ timeout: 25_000 });
+    ).toBeVisible();
 
     // 7. It also appears correctly in the invoice list with a "Sent" badge.
     await page.goto("/admin/invoices");

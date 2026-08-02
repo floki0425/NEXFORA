@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -20,17 +20,25 @@ export function PortalFileUploadForm({ projectId }: PortalFileUploadFormProps) {
   );
   const [state, formAction, isPending] = useActionState(
     async (_previous: PortalFileActionResult | null, formData: FormData) => {
-      const result = await uploadPortalProjectFileAction(projectId, formData);
-      if (result.ok) {
-        setIdempotencyKey(crypto.randomUUID());
-      }
-      return result;
+      return uploadPortalProjectFileAction(projectId, formData);
     },
     INITIAL_STATE,
   );
 
+  useEffect(() => {
+    if (!state?.ok) {
+      return;
+    }
+
+    window.location.reload();
+  }, [state]);
+
+  // No explicit encType on the form below: when `action` is a function,
+  // React submits the form itself as FormData (multipart automatically when
+  // it carries a file) and renders no encType attribute, so setting one
+  // produced a real SSR/client hydration mismatch.
   return (
-    <form action={formAction} className="space-y-4" encType="multipart/form-data">
+    <form action={formAction} className="space-y-4">
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <FormField id="portal-file" label="File" required>
         <input

@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
@@ -23,7 +22,6 @@ export function RevisionAssignForm({
   currentAssigneeId,
   assignees,
 }: RevisionAssignFormProps) {
-  const router = useRouter();
   const [result, setResult] = useState<RevisionActionResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const { register, handleSubmit } = useForm<{ assigneeId: string }>({
@@ -36,7 +34,7 @@ export function RevisionAssignForm({
       const response = await assignRevisionAction(revisionId, values);
       setResult(response);
       if (response.ok) {
-        router.refresh();
+        window.location.reload();
       }
     });
   });

@@ -149,10 +149,16 @@ test("a project id must be a valid UUID before any portal query runs", () => {
 
 // -- Portal navigation: no dead links for later phases --------------------
 
-test("portal navigation lists only active functionality (Phase 7 projects, Phase 9 invoices) — files/revisions stay project-scoped, not top-level", () => {
+test("portal navigation lists active Phase 7/9/10 functionality while files and revisions stay project-scoped", () => {
   const hrefs = PORTAL_NAVIGATION.map((item) => item.href);
-  assert.deepEqual(hrefs, ["/portal", "/portal/projects", "/portal/invoices"]);
-  for (const path of ["files", "revisions", "support", "settings"]) {
+  assert.deepEqual(hrefs, [
+    "/portal",
+    "/portal/projects",
+    "/portal/invoices",
+    "/portal/support",
+    "/portal/subscriptions",
+  ]);
+  for (const path of ["files", "revisions", "settings"]) {
     assert.ok(!hrefs.some((href) => href.includes(path)));
   }
 });
