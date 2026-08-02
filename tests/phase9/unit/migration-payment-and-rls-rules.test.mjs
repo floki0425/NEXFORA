@@ -179,8 +179,24 @@ test("invoices can only be directly updated by authenticated while still a draft
 test("invoices UPDATE grant never includes client_id or project_id — ownership is set once at creation, matching proposals' precedent", async () => {
   const migration = await readMigration();
   const grantsSection = slice(migration, "-- Grants", null);
-  const updateGrant = slice(grantsSection, "grant update (\n  currency,", ") on public.invoices to authenticated;");
 
-  assert.doesNotMatch(updateGrant, /client_id/);
-  assert.doesNotMatch(updateGrant, /project_id/);
+  // Parse the complete `grant update (...) on public.invoices to authenticated;`
+  // statement rather than slicing on a hardcoded column ordering/whitespace,
+  // so this survives reformatting, CRLF/LF differences, and column reordering.
+  const updateGrantMatch = grantsSection.match(
+    /grant\s+update\s*\(([\s\S]*?)\)\s*on\s+public\.invoices\s+to\s+authenticated\s*;/i,
+  );
+  assert.ok(
+    updateGrantMatch,
+    "expected to find a `grant update (...) on public.invoices to authenticated;` statement",
+  );
+
+  const grantedColumns = updateGrantMatch[1]
+    .split(",")
+    .map((column) => column.trim().toLowerCase())
+    .filter(Boolean);
+
+  assert.ok(grantedColumns.length > 0, "expected the UPDATE grant to name at least one column");
+  assert.ok(!grantedColumns.includes("client_id"));
+  assert.ok(!grantedColumns.includes("project_id"));
 });

@@ -327,18 +327,26 @@ own `--project-id`. `src/features/invoices/types.ts` and
 
 ## 16. Tests
 
-- `npm run test:phase9` — unit tests (Zod schemas, permissions,
+- `npm run test:phase9` — runs `test:phase9:unit` (Zod schemas, permissions,
   `formatMoney`, PayMongo webhook-signature math, PayMongo centavos
   conversion, and static analysis of the migration's SQL text for
   numbering/status/void/payment/RLS rules — the last category needs no
   live database and mirrors `tests/phase8/unit/revision-transitions.test.mjs`'s
-  technique) plus integration tests against a real, dedicated non-production
-  Supabase project (numbering, draft/sent editability and RLS, cross-org/
-  cross-client isolation, manual-payment balance/overpayment/idempotency,
-  PayMongo session/webhook reconciliation, overdue derivation). Integration
-  tests skip (not pass, not fail) when `TEST_SUPABASE_*` is not configured
-  — see `docs/PHASE_8_AUTOMATED_TESTING.md` for how to set up that project;
-  Phase 9 reuses it.
+  technique) then `test:phase9:integration` against a real, dedicated
+  non-production Supabase project (numbering, draft/sent editability and
+  RLS, cross-org/cross-client isolation, manual-payment
+  balance/overpayment/idempotency, PayMongo session/webhook reconciliation,
+  overdue derivation). Integration tests skip (not pass, not fail) when
+  `TEST_SUPABASE_*` is not configured — see
+  `docs/PHASE_8_AUTOMATED_TESTING.md` for how to set up that project; Phase
+  9 reuses it. Like `test:phase8:integration`, `test:phase9:integration` runs
+  its five files with Node's `--test-concurrency=1`: their fixtures
+  (`tests/phase9/helpers/factory.mjs`) each create real Supabase Auth users
+  and sessions against the one shared remote project, and running them
+  concurrently across files can produce intermittent parent-hook fixture
+  failures (e.g. `createPhase9Fixtures()` failing with an auth/JWT timing
+  error) — the same class of bug `test:phase8:integration` was serialized to
+  fix. Serial file execution, not retries, is the fix.
 - `npm run test:e2e:phase9` — Playwright, a separate config
   (`playwright.phase9.config.ts`, its own `globalSetup`/fixture-ids file)
   from Phase 8's, because **the E2E test accounts must be distinct**:

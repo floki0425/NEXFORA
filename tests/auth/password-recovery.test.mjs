@@ -6,6 +6,8 @@ import {
   forgotPasswordSchema,
   getSafeInternalRedirectPath,
   isValidAuthCallbackCode,
+  isValidAuthCallbackTokenHash,
+  isValidRecoveryOtpType,
   PASSWORD_RESET_SUCCESS_MESSAGE,
   updatePasswordSchema,
 } from "../../src/features/auth/recovery.ts";
@@ -77,6 +79,43 @@ test("rejects a missing or malformed callback code", () => {
 
 test("accepts a bounded callback code", () => {
   assert.equal(isValidAuthCallbackCode("pkce-auth-code"), true);
+});
+
+test("rejects an invalid or missing recovery OTP type", () => {
+  assert.equal(isValidRecoveryOtpType(null), false);
+  assert.equal(isValidRecoveryOtpType(""), false);
+  assert.equal(isValidRecoveryOtpType("signup"), false);
+  assert.equal(isValidRecoveryOtpType("invite"), false);
+  assert.equal(isValidRecoveryOtpType("magiclink"), false);
+  assert.equal(isValidRecoveryOtpType("email_change"), false);
+  assert.equal(isValidRecoveryOtpType("recovery "), false);
+});
+
+test("accepts the recovery OTP type", () => {
+  assert.equal(isValidRecoveryOtpType("recovery"), true);
+});
+
+test("rejects a missing or malformed callback token hash", () => {
+  assert.equal(isValidAuthCallbackTokenHash(null), false);
+  assert.equal(isValidAuthCallbackTokenHash(""), false);
+  assert.equal(isValidAuthCallbackTokenHash("bad\nhash"), false);
+  assert.equal(isValidAuthCallbackTokenHash("x".repeat(2049)), false);
+});
+
+test("accepts a bounded callback token hash", () => {
+  assert.equal(
+    isValidAuthCallbackTokenHash("pkce_recovery_token_hash"),
+    true,
+  );
+});
+
+test("supports both code and token_hash+type recovery callback params", () => {
+  assert.equal(isValidAuthCallbackCode("pkce-auth-code"), true);
+  assert.equal(
+    isValidAuthCallbackTokenHash("otp-token-hash") &&
+      isValidRecoveryOtpType("recovery"),
+    true,
+  );
 });
 
 test("allows only internal redirect destinations", () => {
