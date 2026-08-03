@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminShell } from "@/components/layout/admin-shell";
+import { getMyUnreadNotificationCount } from "@/features/notifications/queries";
 import {
   AuthenticationRequiredError,
   AuthorizationDeniedError,
@@ -46,9 +47,17 @@ export default async function AdminLayout({
 }>) {
   const member = await getMemberOrRedirect();
 
+  // A failure here must never block the whole admin shell from rendering —
+  // the bell simply starts at 0 and the notifications page itself surfaces
+  // the real error state.
+  const initialUnreadNotificationCount = await getMyUnreadNotificationCount().catch(
+    () => 0,
+  );
+
   return (
     <AdminShell
       fullName={member.profile.fullName}
+      initialUnreadNotificationCount={initialUnreadNotificationCount}
       organizationName={member.organization.name}
       role={member.role}
     >

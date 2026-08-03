@@ -10,6 +10,7 @@ import type { InternalRole } from "@/lib/auth/types";
 interface AdminShellProps {
   children: ReactNode;
   fullName: string;
+  initialUnreadNotificationCount: number;
   organizationName: string;
   role: InternalRole;
 }
@@ -17,6 +18,7 @@ interface AdminShellProps {
 export function AdminShell({
   children,
   fullName,
+  initialUnreadNotificationCount,
   organizationName,
   role,
 }: AdminShellProps) {
@@ -47,6 +49,7 @@ export function AdminShell({
       <div className="min-w-0 lg:pl-64">
         <AdminTopbar
           fullName={fullName}
+          initialUnreadNotificationCount={initialUnreadNotificationCount}
           isNavigationOpen={isMobileNavigationOpen}
           organizationName={organizationName}
           role={role}

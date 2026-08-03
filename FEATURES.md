@@ -3179,8 +3179,11 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3201,10 +3204,12 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Some transactional email may be implemented earlier where required.
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3225,8 +3230,11 @@ P2
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3389,8 +3397,11 @@ P1
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3411,8 +3422,11 @@ P2
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3433,8 +3447,11 @@ P2
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Migration applied and verified on TEST only; see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3608,10 +3625,11 @@ P0
 Status:
 
 ```text
-planned
+in_progress
 ```
 
-Add as soon as sensitive mutations exist.
+Implemented as part of Phase 11 (`docs/PHASE_11_NOTIFICATIONS_SETUP.md`) —
+migration applied and verified on TEST only; DEV not yet updated.
 
 Audit:
 

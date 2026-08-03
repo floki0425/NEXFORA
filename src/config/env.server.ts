@@ -22,6 +22,11 @@ const serverEnvSchema = z.object({
   // see src/lib/paymongo/client.ts and the webhook route handler.
   PAYMONGO_SECRET_KEY: z.string().trim().min(1).optional(),
   PAYMONGO_WEBHOOK_SECRET: z.string().trim().min(1).optional(),
+  // Optional: the reminders cron route fails closed (401) when this is
+  // unset rather than crashing — see src/lib/reminders/cron-secret.ts. Local
+  // dev and tests do not need it since the manual "Run reminders now" admin
+  // action does not go through the HTTP route.
+  CRON_SECRET: z.string().trim().min(32).optional(),
 });
 
 const serverEnvResult = serverEnvSchema.safeParse({
@@ -30,6 +35,7 @@ const serverEnvResult = serverEnvSchema.safeParse({
   EMAIL_FROM: process.env.EMAIL_FROM || undefined,
   PAYMONGO_SECRET_KEY: process.env.PAYMONGO_SECRET_KEY || undefined,
   PAYMONGO_WEBHOOK_SECRET: process.env.PAYMONGO_WEBHOOK_SECRET || undefined,
+  CRON_SECRET: process.env.CRON_SECRET || undefined,
 });
 
 if (!serverEnvResult.success) {

@@ -1,4 +1,5 @@
 import {
+  Bell,
   BriefcaseBusiness,
   FileText,
   FolderKanban,
@@ -85,6 +86,11 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     href: "/admin/subscriptions",
     icon: Repeat2,
     visibleTo: SUBSCRIPTION_ROLES,
+  },
+  {
+    label: "Notifications",
+    href: "/admin/notifications",
+    icon: Bell,
   },
   {
     label: "Settings",

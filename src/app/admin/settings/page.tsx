@@ -1,42 +1,14 @@
-import { Settings } from "lucide-react";
+import { ShieldCheck, Settings } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { ModulePlaceholder } from "@/components/layout/module-placeholder";
-import { SETTINGS_ROLES } from "@/config/admin-navigation";
-import {
-  AuthenticationRequiredError,
-  AuthorizationDeniedError,
-} from "@/lib/auth/errors";
-import { requireInternalMember } from "@/lib/auth/server";
+import { Card, CardContent } from "@/components/ui/card";
+import { requireSettingsAccess } from "@/lib/auth/settings-access";
 
 export const metadata: Metadata = {
   title: "Settings",
 };
-
-async function requireSettingsAccess() {
-  let member;
-
-  try {
-    member = await requireInternalMember();
-  } catch (error) {
-    if (error instanceof AuthenticationRequiredError) {
-      redirect("/auth/login?reason=session_required");
-    }
-
-    if (error instanceof AuthorizationDeniedError) {
-      redirect("/auth/login?reason=access_denied");
-    }
-
-    throw error;
-  }
-
-  if (!SETTINGS_ROLES.some((role) => role === member.role)) {
-    redirect("/admin?notice=settings_access_denied");
-  }
-
-  return member;
-}
 
 export default async function SettingsPage() {
   await requireSettingsAccess();
@@ -49,6 +21,31 @@ export default async function SettingsPage() {
       icon={Settings}
       emptyTitle="Settings are not available yet"
       emptyDescription="Organization, team, and system settings will be implemented in a later authorized phase. No configuration data is fetched during Phase 2."
-    />
+    >
+      <Card>
+        <CardContent className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck
+              className="size-5 shrink-0 text-text-secondary"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Audit log
+              </p>
+              <p className="text-sm text-text-secondary">
+                Review sensitive actions across your organization.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/settings/audit-log"
+            className="text-sm font-medium text-accent hover:underline"
+          >
+            View audit log
+          </Link>
+        </CardContent>
+      </Card>
+    </ModulePlaceholder>
   );
 }

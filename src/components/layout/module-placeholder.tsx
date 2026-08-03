@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ interface ModulePlaceholderProps {
   emptyTitle: string;
   emptyDescription: string;
   icon: LucideIcon;
+  children?: ReactNode;
 }
 
 export function ModulePlaceholder({
@@ -21,6 +23,7 @@ export function ModulePlaceholder({
   emptyTitle,
   emptyDescription,
   icon,
+  children,
 }: ModulePlaceholderProps) {
   return (
     <div className="space-y-8">
@@ -37,6 +40,7 @@ export function ModulePlaceholder({
           description={emptyDescription}
         />
       </Card>
+      {children}
     </div>
   );
 }

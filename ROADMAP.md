@@ -1224,8 +1224,22 @@ Reduce repetitive operational work.
 Status:
 
 ```text
-planned
+in_progress
 ```
+
+Implementation summary: migration (audit_logs, notifications,
+notification_preferences, notification_deliveries, private.reminder_runs;
+14 event-emitting triggers; RLS; RPCs), feature modules, admin UI (bell,
+feed, preferences, audit log), email templates, and the scheduled-reminder
+runner/cron route are written (see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`). The migration has been applied to
+and catalog-verified against the dedicated TEST project only —
+`src/types/database.ts` is regenerated from TEST, and the Phase 11 unit
+(64) and integration (40) suites both pass, run twice for determinism.
+DEV has **not** been touched. E2E has not run: it requires six
+`TEST_P11_*` fixture-account variables in `.env.test.local` that have not
+been set. See `docs/PHASE_11_NOTIFICATIONS_SETUP.md` for the exact
+remaining steps (DEV apply, E2E credentials, Vercel cron wiring).
 
 Version:
 

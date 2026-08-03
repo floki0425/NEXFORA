@@ -51,3 +51,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+tests/phase11/e2e/.e2e-fixture-ids.json
