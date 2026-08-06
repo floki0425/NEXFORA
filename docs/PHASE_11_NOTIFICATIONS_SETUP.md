@@ -2,13 +2,18 @@
 
 ## Current status
 
-Phase 11's database layer, application layer, unit tests, and integration
-tests are **complete and verified against TEST**. DEV has **not** been
-touched — per the approved migration rules, DEV is only updated after an
-explicit, separate approval. The E2E tier's code (config, launcher, fixture
-setup, four specs) is complete but has never been executed: it requires six
-`TEST_P11_*` fixture-account variables in `.env.test.local` that do not exist
-yet (see "Environment variables" below).
+Phase 11 is **complete**. It is merged into `main`, its migrations are
+applied and verified on **both TEST and DEV**, and it is deployed to Vercel.
+The database layer, application layer, unit tests, integration tests, and the
+E2E tier have all been executed and are green.
+
+Production verification passed:
+
+- A valid cron request returned `200`; a request with a wrong secret returned
+  `401`.
+- An immediate second cron run raised **zero** duplicate reminders.
+- A real invoice notification workflow produced **exactly one** `audit_logs`
+  row.
 
 Successive post-handoff reviews found and this setup closed **four** release
 blockers before any deploy:
@@ -33,7 +38,7 @@ below for exact behavior before/after.
 | Environment | Project ref | State |
 | --- | --- | --- |
 | TEST | `akcxsmdodfgfqilavnlf` | **All four migrations applied and catalog-verified; types regenerated against all four.** Unit 107/107, integration 65/65, E2E 5/5, all green on repeated runs |
-| DEV | `qcuhdysqijrozhzasnbe` | Not touched. Apply all four, in order, only after the migrations are reviewed and this doc's TEST checklist is independently re-confirmed |
+| DEV | `qcuhdysqijrozhzasnbe` | **All four migrations applied, in order, and catalog-verified.** |
 
 Unlike Phase 10, this migration was applied via `supabase db query --linked
 -f <file>` (direct SQL execution against TEST through the Management API),
@@ -43,6 +48,14 @@ every prior phase's migration was also applied by direct/manual SQL, not
 `db push`, so there is no CLI-tracked migration history to reconcile. Do not
 run `migration repair`: there is no history gap to repair, only an
 untracked-by-design application model this repo has used since Phase 1.
+
+> **Caveat — the paragraph above is a historical note, not current state.**
+> The claim that `supabase_migrations.schema_migrations` is absent and that
+> every migration was applied by direct SQL is **no longer verified** and must
+> not be relied on. Migration history may have changed since it was written.
+> Before any future apply, re-check the real state with
+> `supabase migration list --linked` against the target project rather than
+> assuming it from this document.
 
 ## Migration files
 
@@ -57,12 +70,11 @@ that aborts loudly rather than guessing) and refuses to run twice.
 4. supabase/migrations/20260806030000_fix_phase_11_claim_identity.sql
 ```
 
-The same order applies to TEST and to DEV. Migrations 1-3 are already applied
-to TEST; migration 4 is not (verified live — see "Applying the claim-identity
-migration"). DEV has none of them.
+The same order applies to TEST and to DEV. All four migrations are applied to
+both TEST and DEV.
 
-None of migrations 1-3 may be edited: all three are applied to TEST, so every
-subsequent correction must be a new file. `tests/phase11/unit/claim-identity.test.mjs`
+None of these migrations may be edited: all four are applied to TEST and DEV,
+so every subsequent correction must be a new file. `tests/phase11/unit/claim-identity.test.mjs`
 and `tests/phase11/unit/delivery-lease.test.mjs` both statically assert that
 the earlier files still contain their original definitions, so editing one in
 place fails the unit suite rather than silently diverging TEST from the repo.
@@ -873,7 +885,7 @@ npm run build
       service-role-only RPC rejecting an authenticated caller.
 - [x] `npm run lint` / `npm run typecheck` clean.
 
-### Not yet done (manual follow-up required)
+### Completed follow-up verification
 
 - [x] Applied `20260806030000_fix_phase_11_claim_identity.sql` to TEST and ran
       the catalog verification — exactly two RPC identities, legacy signature
@@ -889,14 +901,14 @@ npm run build
       results.
 - [x]Apply this same reviewed migration file to DEV, then repeat the
       catalog-verification steps above against DEV specifically.
-- [ ] Link the project to Vercel, set `CRON_SECRET`/`RESEND_API_KEY`/
-      `EMAIL_FROM` in its env, confirm `vercel.json`'s cron entry is picked
-      up.
-- [ ] Smoke test in a real deploy: one real cron invocation returns `200`;
-      an immediate second invocation raises zero duplicate reminders; a
-      request with a wrong `Authorization` header returns `401`.
-- [ ] Send a real invoice → confirm the bell increments → confirm exactly
-      one `audit_logs` row.
+- [x] Linked the project to Vercel, set `CRON_SECRET`/`RESEND_API_KEY`/
+      `EMAIL_FROM` in its env, and confirmed `vercel.json`'s cron entry is
+      picked up.
+- [x] Smoke tested in a real deploy: a valid cron invocation returned `200`;
+      a request with a wrong `Authorization` header returned `401`; an
+      immediate second invocation raised zero duplicate reminders.
+- [x] Sent a real invoice → the bell incremented → exactly one `audit_logs`
+      row was produced.
 
 ## Unresolved decisions carried over from the handoff (business calls, not technical ones)
 

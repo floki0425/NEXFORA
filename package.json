@@ -34,7 +34,13 @@
     "test:phase11": "npm run test:phase11:unit && npm run test:phase11:integration",
     "dev:e2e:phase11": "node scripts/start-phase11-e2e-server.mjs",
     "test:e2e:phase11": "playwright test --config=playwright.phase11.config.ts",
-    "test:phase11:all": "npm run test:phase11 && npm run test:e2e:phase11"
+    "test:phase11:all": "npm run test:phase11 && npm run test:e2e:phase11",
+    "test:phase12:unit": "node --import ./tests/support/register-app-alias-loader.mjs --test tests/phase12/unit/migration-reporting-schema.test.mjs tests/phase12/unit/migration-search-authorization.test.mjs tests/phase12/unit/migration-indexes.test.mjs tests/phase12/unit/migration-input-boundaries.test.mjs tests/phase12/unit/metric-definitions.test.mjs tests/phase12/unit/report-filters-schema.test.mjs tests/phase12/unit/manila-date-range.test.mjs tests/phase12/unit/search-sanitize.test.mjs tests/phase12/unit/permissions.test.mjs tests/phase12/unit/search-result-mapping.test.mjs tests/phase12/unit/search-result-status.test.mjs tests/phase12/unit/report-response-mapping.test.mjs",
+    "test:phase12:integration": "node --test --test-concurrency=1 tests/phase12/integration/fixture-lifecycle.test.mjs tests/phase12/integration/lead-conversion-report.test.mjs tests/phase12/integration/lead-source-report.test.mjs tests/phase12/integration/proposal-win-rate.test.mjs tests/phase12/integration/revenue-report.test.mjs tests/phase12/integration/project-delivery-report.test.mjs tests/phase12/integration/report-authorization.test.mjs tests/phase12/integration/search-entity-permission-matrix.test.mjs tests/phase12/integration/search-bounds.test.mjs tests/phase12/integration/cross-tenant.test.mjs",
+    "test:phase12": "npm run test:phase12:unit && npm run test:phase12:integration",
+    "dev:e2e:phase12": "node scripts/start-phase12-e2e-server.mjs",
+    "test:e2e:phase12": "playwright test --config=playwright.phase12.config.ts",
+    "test:phase12:all": "npm run test:phase12:unit && npm run test:phase12:integration && npm run test:e2e:phase12"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.3",

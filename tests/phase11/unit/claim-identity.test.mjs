@@ -5,10 +5,9 @@
 // flight, so a stalled worker's result could overwrite a newer claim.
 
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { sliceSql } from "../helpers/migration-test-helpers.mjs";
+import { readMigrationFile, sliceSql } from "../helpers/migration-test-helpers.mjs";
 
 const BASE_PATH = new URL(
   "../../../supabase/migrations/20260806000000_phase_11_notifications_audit.sql",
@@ -28,13 +27,13 @@ const CLAIM_IDENTITY_PATH = new URL(
 );
 
 async function readClaimIdentityFix() {
-  return readFile(CLAIM_IDENTITY_PATH, "utf8");
+  return readMigrationFile(CLAIM_IDENTITY_PATH);
 }
 
 test("does not modify any of the three already-applied Phase 11 migrations", async () => {
-  const base = await readFile(BASE_PATH, "utf8");
-  const atomicityFix = await readFile(ATOMICITY_FIX_PATH, "utf8");
-  const leaseFix = await readFile(LEASE_FIX_PATH, "utf8");
+  const base = await readMigrationFile(BASE_PATH);
+  const atomicityFix = await readMigrationFile(ATOMICITY_FIX_PATH);
+  const leaseFix = await readMigrationFile(LEASE_FIX_PATH);
 
   // All three are applied to TEST and are forward-only from here. Each must
   // still contain its own original definitions, proving this migration adds a

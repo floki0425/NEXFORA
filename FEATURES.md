@@ -3179,11 +3179,11 @@ P1
 Status:
 
 ```text
-in_progress
+completed
 ```
 
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel and
+verified in production. See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3204,12 +3204,12 @@ P1
 Status:
 
 ```text
-in_progress
+completed
 ```
 
 Some transactional email may be implemented earlier where required.
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel and
+verified in production. See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3230,11 +3230,11 @@ P2
 Status:
 
 ```text
-in_progress
+completed
 ```
 
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel and
+verified in production. See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3397,11 +3397,12 @@ P1
 Status:
 
 ```text
-in_progress
+completed
 ```
 
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel with the
+cron runner verified in production (immediate re-run raised zero duplicate
+reminders). See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3422,11 +3423,12 @@ P2
 Status:
 
 ```text
-in_progress
+completed
 ```
 
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel with the
+cron runner verified in production (immediate re-run raised zero duplicate
+reminders). See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
@@ -3447,15 +3449,38 @@ P2
 Status:
 
 ```text
-in_progress
+completed
 ```
 
-Migration applied and verified on TEST only; see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
+Migration applied and verified on TEST and DEV; deployed to Vercel with the
+cron runner verified in production (immediate re-run raised zero duplicate
+reminders). See `docs/PHASE_11_NOTIFICATIONS_SETUP.md`.
 
 ---
 
 # 32. V0.4 — Reporting
+
+**F-099 → F-104 note (Phase 12A, Checkpoint 2D).** Verified by a 100-test
+Playwright suite alongside the 133-test unit tier and the 107-test integration
+tier run against the dedicated TEST project.
+
+**Platform requirement: the authenticated admin application requires
+JavaScript.** F-104's Global Search dialog has a directly addressable server
+route at `/admin/search?q=<term>` — URL-addressable, bookmarkable,
+refreshable, server-rendered, and under the same role and tenant authorization
+as the dialog. It is **not** scripting-optional, and is no longer claimed to
+be: the App Router `loading.tsx` and Suspense boundaries the admin shell has
+used since Phase 2 rely on client-side streamed-content reconciliation. Both
+`loading.tsx` boundaries are deliberately retained, because deleting them
+would change loading behaviour across every Phase 2–11 admin surface.
+
+The earlier scripting-disabled requirement was **withdrawn** as a product
+decision after browser verification exposed that consequence. The three
+assertions encoding it were removed — they are **not** recorded as passing —
+and replaced by JavaScript-enabled assertions covering URL addressability,
+malformed-query safety, and a byte-level check that no unauthorized row is
+ever sent to the browser. See
+`docs/PHASE_12A_REPORTING_SEARCH_SETUP.md` → "Platform requirement".
 
 ## F-099 — Lead Conversion Report
 
@@ -3474,7 +3499,7 @@ P2
 Status:
 
 ```text
-planned
+completed
 ```
 
 ---
@@ -3496,7 +3521,7 @@ P2
 Status:
 
 ```text
-planned
+completed
 ```
 
 ---
@@ -3518,7 +3543,7 @@ P2
 Status:
 
 ```text
-planned
+completed
 ```
 
 ---
@@ -3540,7 +3565,7 @@ P2
 Status:
 
 ```text
-planned
+completed
 ```
 
 Only after invoices/payments are reliable.
@@ -3564,7 +3589,7 @@ P3
 Status:
 
 ```text
-planned
+completed
 ```
 
 ---
@@ -3588,7 +3613,7 @@ P2
 Status:
 
 ```text
-planned
+completed
 ```
 
 Searchable entities:
@@ -3625,11 +3650,13 @@ P0
 Status:
 
 ```text
-in_progress
+completed
 ```
 
 Implemented as part of Phase 11 (`docs/PHASE_11_NOTIFICATIONS_SETUP.md`) —
-migration applied and verified on TEST only; DEV not yet updated.
+migration applied and verified on TEST and DEV, deployed to Vercel, and
+verified in production: a real invoice notification produced exactly one
+`audit_logs` row.
 
 Audit:
 
@@ -3762,7 +3789,49 @@ planned
 
 ---
 
-# 36. Explicitly Out of Scope for Current Roadmap
+# 36. Future Operations Features
+
+Internal operations features that are approved in principle but deliberately
+not scheduled into the current phase. Unlike Section 37, these are expected to
+be built eventually.
+
+## F-111 — Project Delay Attribution
+
+Priority:
+
+```text
+P3
+```
+
+Status:
+
+```text
+planned
+```
+
+A timestamped hold/dependency ledger recording when a project was blocked and
+who caused it:
+
+```text
+project_id
+reason_category
+caused_by (internal | client | third_party)
+started_at
+ended_at
+```
+
+This enables a true team-performance metric that is separate from schedule
+adherence: Schedule On-Time Rate measures whether dates were met, while
+attribution measures whether Nexfora was the cause of any slippage. Without
+it, client-caused and third-party-caused delays are indistinguishable from
+internal ones.
+
+Explicitly **not** built in Phase 12A. Phase 12A ships the schedule metric
+with a documented caveat instead.
+
+---
+
+# 37. Explicitly Out of Scope for Current Roadmap
 
 Do not build unless `PRODUCT.md` and `ROADMAP.md` are updated.
 
@@ -3785,7 +3854,7 @@ AI vector search over all client data
 
 ---
 
-# 37. Feature Dependency Rules
+# 38. Feature Dependency Rules
 
 Before starting a feature:
 
@@ -3815,7 +3884,7 @@ by the current development plan.
 
 ---
 
-# 38. Feature Readiness Checklist
+# 39. Feature Readiness Checklist
 
 A feature may move from `planned` to `ready` when:
 
@@ -3831,7 +3900,7 @@ A feature may move from `planned` to `ready` when:
 
 ---
 
-# 39. Feature Completion Checklist
+# 40. Feature Completion Checklist
 
 A feature may move to `completed` only when:
 
@@ -3851,7 +3920,7 @@ A feature may move to `completed` only when:
 
 ---
 
-# 40. Feature Registry Maintenance Rule
+# 41. Feature Registry Maintenance Rule
 
 When a feature changes:
 
@@ -3869,7 +3938,7 @@ Do not let this file become stale.
 
 ---
 
-# 41. Current Recommended Build Queue
+# 42. Current Recommended Build Queue
 
 The recommended initial implementation queue is:
 
@@ -3909,7 +3978,7 @@ F-042 Project Progress
 
 ---
 
-# 42. First Production Milestone
+# 43. First Production Milestone
 
 The first real usable milestone is:
 
@@ -3941,7 +4010,7 @@ Do not move into proposals, invoices, or AI until this workflow is stable enough
 
 ---
 
-# 43. Final Feature Principle
+# 44. Final Feature Principle
 
 Every feature must support a real Nexfora workflow.
 

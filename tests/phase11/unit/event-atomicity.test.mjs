@@ -5,10 +5,9 @@
 // (20260806010000_fix_phase_11_event_atomicity.sql), not the base one.
 
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { sliceSql } from "../helpers/migration-test-helpers.mjs";
+import { readMigrationFile, sliceSql } from "../helpers/migration-test-helpers.mjs";
 
 const FOLLOW_UP_PATH = new URL(
   "../../../supabase/migrations/20260806010000_fix_phase_11_event_atomicity.sql",
@@ -16,16 +15,15 @@ const FOLLOW_UP_PATH = new URL(
 );
 
 async function readFollowUp() {
-  return readFile(FOLLOW_UP_PATH, "utf8");
+  return readMigrationFile(FOLLOW_UP_PATH);
 }
 
 test("does not modify the base Phase 11 migration file", async () => {
-  const base = await readFile(
+  const base = await readMigrationFile(
     new URL(
       "../../../supabase/migrations/20260806000000_phase_11_notifications_audit.sql",
       import.meta.url,
     ),
-    "utf8",
   );
   // The base file's emit_event still contains the OLD swallow-everything
   // handler — proving the follow-up replaces it via `create or replace`

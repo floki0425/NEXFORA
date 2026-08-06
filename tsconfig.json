@@ -43,7 +43,9 @@
     ".next/e2e-phase-10-e2e/dev/types/**/*.ts",
     "**/*.mts",
     ".next/e2e-phase-11-e2e/types/**/*.ts",
-    ".next/e2e-phase-11-e2e/dev/types/**/*.ts"
+    ".next/e2e-phase-11-e2e/dev/types/**/*.ts",
+    ".next/e2e-phase-12-e2e/types/**/*.ts",
+    ".next/e2e-phase-12-e2e/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

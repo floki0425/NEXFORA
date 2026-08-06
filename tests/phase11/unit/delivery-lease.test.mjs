@@ -5,10 +5,9 @@
 // that row stuck forever (confirmed live on TEST as 21 orphaned rows).
 
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { sliceSql } from "../helpers/migration-test-helpers.mjs";
+import { readMigrationFile, sliceSql } from "../helpers/migration-test-helpers.mjs";
 
 const BASE_PATH = new URL(
   "../../../supabase/migrations/20260806000000_phase_11_notifications_audit.sql",
@@ -24,12 +23,12 @@ const LEASE_FIX_PATH = new URL(
 );
 
 async function readLeaseFix() {
-  return readFile(LEASE_FIX_PATH, "utf8");
+  return readMigrationFile(LEASE_FIX_PATH);
 }
 
 test("does not modify the base Phase 11 migration or the event-atomicity follow-up", async () => {
-  const base = await readFile(BASE_PATH, "utf8");
-  const atomicityFix = await readFile(ATOMICITY_FIX_PATH, "utf8");
+  const base = await readMigrationFile(BASE_PATH);
+  const atomicityFix = await readMigrationFile(ATOMICITY_FIX_PATH);
   // Both prior files still contain their original claim/mark definitions —
   // proving the lease fix replaces them via `create or replace` in a new
   // file rather than editing either already-applied migration in place.

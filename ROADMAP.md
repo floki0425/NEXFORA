@@ -1224,22 +1224,20 @@ Reduce repetitive operational work.
 Status:
 
 ```text
-in_progress
+completed
 ```
 
 Implementation summary: migration (audit_logs, notifications,
 notification_preferences, notification_deliveries, private.reminder_runs;
 14 event-emitting triggers; RLS; RPCs), feature modules, admin UI (bell,
 feed, preferences, audit log), email templates, and the scheduled-reminder
-runner/cron route are written (see
-`docs/PHASE_11_NOTIFICATIONS_SETUP.md`). The migration has been applied to
-and catalog-verified against the dedicated TEST project only —
-`src/types/database.ts` is regenerated from TEST, and the Phase 11 unit
-(64) and integration (40) suites both pass, run twice for determinism.
-DEV has **not** been touched. E2E has not run: it requires six
-`TEST_P11_*` fixture-account variables in `.env.test.local` that have not
-been set. See `docs/PHASE_11_NOTIFICATIONS_SETUP.md` for the exact
-remaining steps (DEV apply, E2E credentials, Vercel cron wiring).
+runner/cron route are complete (see
+`docs/PHASE_11_NOTIFICATIONS_SETUP.md`). The migrations are applied and
+verified on **both TEST and DEV**, and the phase is deployed to Vercel.
+Production verification: a valid cron request returned `200` and a
+wrong-secret request returned `401`; an immediate second cron run raised
+zero duplicate reminders; and a real invoice notification workflow
+produced exactly one `audit_logs` row.
 
 Version:
 
@@ -1311,7 +1309,7 @@ Add intelligence only after core operational data is reliable.
 Status:
 
 ```text
-planned
+in_progress
 ```
 
 Version:
@@ -1337,6 +1335,33 @@ F-102 Revenue Dashboard
 F-103 Project Delivery Report
 F-104 Global Search
 ```
+
+Phase 12A (Reporting + Global Search, F-099 → F-104):
+
+```text
+completed
+```
+
+Checkpoints 2A (migrations on TEST), 2B (107 integration tests), 2C (routes,
+reporting UI, search palette) and 2D (Playwright E2E, responsive,
+accessibility) are complete. The 100-test E2E suite covers report access,
+rendering, filters, search keyboard/focus/permissions, the addressable search
+route, the topbar and Notification Bell regression, dashboard role visibility,
+and desktop/tablet/mobile responsiveness.
+
+**Platform requirement:** the authenticated admin application requires
+JavaScript. The Global Search dialog has a directly addressable server route
+at `/admin/search?q=<term>` — URL-addressable, bookmarkable, refreshable, and
+under the same role and tenant authorization as the dialog — but it is not
+scripting-optional, because the App Router `loading.tsx` and Suspense
+boundaries used across the admin shell since Phase 2 rely on client-side
+streamed-content reconciliation. Both `loading.tsx` boundaries are
+deliberately retained rather than removed, since deleting them would change
+loading behaviour across every Phase 2–11 admin surface. See
+`docs/PHASE_12A_REPORTING_SEARCH_SETUP.md` → "Platform requirement".
+
+Phase 12 overall stays `in_progress` regardless: the AI features
+F-090 → F-095 are not implemented.
 
 AI Rule:
 
@@ -1655,7 +1680,24 @@ Native mobile app
 Complex white-label SaaS
 Multi-tenant billing
 Vector database over all client content
+Project delay attribution ledger (F-111)
 ```
+
+Project delay attribution (F-111) would add a timestamped hold/dependency
+ledger:
+
+```text
+project_id
+reason_category
+caused_by (internal | client | third_party)
+started_at
+ended_at
+```
+
+That would let the Schedule On-Time Rate be separated from a true
+team-performance metric, by distinguishing internally-caused slippage from
+client-caused and third-party-caused slippage. Phase 12A ships the schedule
+metric with a documented caveat and does **not** build this schema.
 
 ---
 
