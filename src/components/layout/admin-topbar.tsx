@@ -13,6 +13,7 @@ import {
 } from "@/config/admin-navigation";
 import { logout } from "@/features/auth/actions";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { GlobalSearchTrigger } from "@/features/search/components/global-search-trigger";
 import type { InternalRole } from "@/lib/auth/types";
 
 interface AdminTopbarProps {
@@ -78,6 +79,8 @@ export function AdminTopbar({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <GlobalSearchTrigger />
+
           <NotificationBell initialUnreadCount={initialUnreadNotificationCount} />
 
           <div ref={profileMenuRef} className="relative">

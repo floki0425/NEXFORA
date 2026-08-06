@@ -1,6 +1,8 @@
 import {
   Activity,
   BriefcaseBusiness,
+  Coins,
+  FileText,
   FolderKanban,
   ListTodo,
   UsersRound,
@@ -18,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getDashboardTiles } from "@/features/reports/dashboard";
 import { requireInternalMember } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
@@ -29,6 +32,15 @@ interface AdminPageProps {
     notice?: string | string[];
   }>;
 }
+
+/** Icons for the live report tiles, keyed by their label. */
+const SUMMARY_ICONS: Record<string, typeof Activity> = {
+  "Leads this month": UsersRound,
+  "Proposal win rate": FileText,
+  "Collected this month": Coins,
+  "Active projects": FolderKanban,
+  "Your active projects": FolderKanban,
+};
 
 const SUMMARY_CARDS = [
   {
@@ -95,6 +107,11 @@ export default async function AdminPage({
     ? params.notice[0]
     : params.notice;
 
+  // Role-aware: an admin gets four summaries, a project manager gets only
+  // their own delivery scope, a team member gets none and keeps the
+  // placeholders below.
+  const reportTiles = await getDashboardTiles(member.role);
+
   return (
     <div className="space-y-8 lg:space-y-10">
       {notice === "logout_failed" ? (
@@ -115,6 +132,15 @@ export default async function AdminPage({
         </div>
       ) : null}
 
+      {notice === "reports_access_denied" ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-error/25 bg-error-soft px-4 py-3 text-sm text-error"
+        >
+          That report is not available for your role.
+        </div>
+      ) : null}
+
       <PageHeader
         eyebrow="NEXFORA OS"
         title={`Welcome, ${member.profile.fullName}`}
@@ -131,13 +157,25 @@ export default async function AdminPage({
             Workspace summary
           </h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Metrics remain unavailable until their source modules launch.
+            {reportTiles.length > 0
+              ? "Month to date, in Asia/Manila."
+              : "Metrics remain unavailable until their source modules launch."}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {SUMMARY_CARDS.map((summaryCard) => (
-            <StatCard key={summaryCard.label} {...summaryCard} />
-          ))}
+          {reportTiles.length > 0
+            ? reportTiles.map((tile) => (
+                <StatCard
+                  key={tile.label}
+                  label={tile.label}
+                  value={tile.value}
+                  description={tile.description}
+                  icon={SUMMARY_ICONS[tile.label] ?? Activity}
+                />
+              ))
+            : SUMMARY_CARDS.map((summaryCard) => (
+                <StatCard key={summaryCard.label} {...summaryCard} />
+              ))}
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bell,
   BriefcaseBusiness,
   FileText,
@@ -32,6 +33,52 @@ export const SUBSCRIPTION_ROLES = [
   "admin",
   "project_manager",
 ] as const satisfies readonly InternalRole[];
+
+export const REPORT_IDS = [
+  "lead_conversion",
+  "lead_source",
+  "proposal_win_rate",
+  "revenue",
+  "project_delivery",
+] as const;
+
+export type ReportId = (typeof REPORT_IDS)[number];
+
+/**
+ * Per-report role access, mirroring the role check inside each report RPC
+ * (supabase/migrations/20260807000000_phase_12a_reporting.sql). The database
+ * check is the boundary; this drives navigation and the route gate.
+ *
+ * It lives in config/ rather than features/ so both src/lib/auth (which must
+ * never import from src/features) and the reports feature can share one
+ * definition instead of keeping two that can drift.
+ */
+export const REPORT_ROLE_ACCESS: Record<ReportId, readonly InternalRole[]> = {
+  lead_conversion: ["super_admin", "admin"],
+  lead_source: ["super_admin", "admin"],
+  proposal_win_rate: ["super_admin", "admin"],
+  revenue: ["super_admin", "admin"],
+  project_delivery: ["super_admin", "admin", "project_manager"],
+};
+
+/** Roles that may open the reports index at all. */
+export const REPORT_INDEX_ROLES = [
+  "super_admin",
+  "admin",
+  "project_manager",
+] as const satisfies readonly InternalRole[];
+
+export function canViewReport(role: InternalRole, reportId: ReportId): boolean {
+  return REPORT_ROLE_ACCESS[reportId].includes(role);
+}
+
+export function visibleReportsForRole(role: InternalRole): readonly ReportId[] {
+  return REPORT_IDS.filter((reportId) => canViewReport(role, reportId));
+}
+
+export function canViewAnyReport(role: InternalRole): boolean {
+  return visibleReportsForRole(role).length > 0;
+}
 
 export const INTERNAL_ROLE_LABELS: Record<InternalRole, string> = {
   super_admin: "Super Admin",
@@ -86,6 +133,12 @@ export const ADMIN_NAVIGATION: readonly AdminNavigationItem[] = [
     href: "/admin/subscriptions",
     icon: Repeat2,
     visibleTo: SUBSCRIPTION_ROLES,
+  },
+  {
+    label: "Reports",
+    href: "/admin/reports",
+    icon: BarChart3,
+    visibleTo: REPORT_INDEX_ROLES,
   },
   {
     label: "Notifications",
