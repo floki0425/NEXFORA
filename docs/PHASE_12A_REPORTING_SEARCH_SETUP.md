@@ -5,9 +5,14 @@ workspace search. AI features F-090 → F-095 are explicitly out of scope.
 
 ## Current status
 
-**Checkpoints 2A, 2B, 2C and 2D are complete.** F-099 → F-104 are
-`completed`; the Phase 12A sub-phase is `completed`. Phase 12 overall remains
-`in_progress`, because the AI features F-090 → F-095 are not implemented.
+**Checkpoints 2A, 2B, 2C, 2D and 2E are complete, and Checkpoint 2F has
+applied both migrations to DEV.** F-099 → F-104 are `completed`; the Phase 12A
+sub-phase is `completed`. Phase 12 overall remains `in_progress`, because the
+AI features F-090 → F-095 are not implemented.
+
+**DEV rollout is done as of 2026-08-08; the production deployment is still
+pending.** See "Checkpoint 2F — DEV rollout" near the end of this document for
+the migration-history state, application method, and catalog verification.
 
 ### Platform requirement
 
@@ -40,7 +45,11 @@ and UI (reports pages, search palette, dashboard cards). Those are Checkpoint
 | Environment | Project ref | State |
 | --- | --- | --- |
 | TEST | `akcxsmdodfgfqilavnlf` | Both Phase 12A migrations applied and catalog-verified. Types regenerated from here. |
-| DEV | *(not referenced in this checkpoint)* | **Untouched.** Apply only after a separate, explicit approval. |
+| DEV | `qcuhdysqijrozhzasnbe` | Both Phase 12A migrations applied and catalog-verified on 2026-08-08 (Checkpoint 2F). |
+
+The sentences below that describe DEV as untouched are the **Checkpoint 2A**
+record and are kept as written for that checkpoint. They were accurate then;
+Checkpoint 2F superseded them.
 
 ---
 
@@ -1070,6 +1079,209 @@ and both `loading.tsx` boundaries were retained. See "Platform requirement".
 3. Non-blocking — the dashboard tiles use `preset: this_month`, so they show
    live-but-empty figures against a fixture set seeded in March 2026. Numeric
    correctness is proven on the reports themselves against the seeded window.
-4. Non-blocking — DEV has still never been contacted. Applying these two
-   migrations to DEV, and the production deploy, remain separate steps needing
-   their own explicit approval.
+4. Resolved in Checkpoint 2F — DEV has now been applied and verified. The
+   production deploy remains a separate step.
+
+---
+
+# Checkpoint 2F — DEV rollout
+
+Applied **2026-08-08**. Target: **DEV `qcuhdysqijrozhzasnbe`** only. TEST was
+never contacted during this rollout.
+
+## Link safety
+
+`supabase/.temp/project-ref` was read before every remote command. At the start
+of 2F it still pointed at **TEST** (`akcxsmdodfgfqilavnlf`), left over from
+Checkpoint 2A — the same class of hazard the 2A "DEV isolation" note describes,
+in the opposite direction. It was relinked to DEV explicitly and the file
+re-read and asserted equal to `qcuhdysqijrozhzasnbe` before any `--linked`
+command ran. Every subsequent `--linked` command was preceded by that same
+assertion.
+
+## Observed DEV migration-history state
+
+**DEV does not match TEST, and the difference matters.**
+
+`supabase migration list --linked` against DEV returned **26 rows: 24 with a
+populated `Remote` column and 2 empty** — the two Phase 12A files.
+
+```
+ Local            | Remote           | Time (UTC)
+------------------|------------------|---------------------
+ 20260727000000   | 20260727000000   | 2026-07-27 00:00:00
+ ...              | ...              |
+ 20260806030000   | 20260806030000   | 2026-08-06 03:00:00
+ 20260807000000   |                  | 2026-08-07 00:00:00
+ 20260807010000   |                  | 2026-08-07 01:00:00
+```
+
+That is **history fully aligned through Phase 11** with exactly the two Phase
+12A migrations pending — not the "absent/empty" state TEST showed, where all 26
+rows were empty. All 26 local files map 1:1 against the list; nothing is
+partial, divergent, duplicated, or ambiguous.
+
+## Application method
+
+```
+supabase db query --linked -f <wrapped file>
+```
+
+CLI help was inspected first (`supabase migration --help`, `supabase db
+--help`, `supabase db query --help`). `db push` is the canonical fit for an
+aligned history and would have applied exactly the two pending files and
+recorded them — but it is forbidden by the checkpoint instruction, as are
+`migration up` (whose own help says it targets the **local** database) and
+`migration repair`. `db query` is therefore the supported method that applies
+the two pending migrations in order without replaying Phases 1–11.
+
+**Known consequence, accepted deliberately:** because `db query` does not write
+migration history, DEV's `supabase_migrations.schema_migrations` still has no
+rows for `20260807000000` or `20260807010000`. `migration list` will keep
+showing them as pending on DEV even though every object exists and is verified.
+Recording them would require `migration repair`, which is forbidden. This is a
+bookkeeping gap only, not a schema gap.
+
+**Transactionality.** Each file was applied wrapped in an explicit
+`begin; … commit;` built at apply time in a scratch directory. The repository
+migration files were **not modified**.
+
+### Source-byte provenance — why the apply source was the git blob
+
+`core.autocrlf = true` is set at the **system** level (Git for Windows default)
+and the repository has no `.gitattributes`. Merging the feature branch into
+`main` re-materialized both migrations and converted them LF → CRLF in the
+working tree, so their on-disk SHA-256 no longer matched the Checkpoint 2A
+baseline. This was proven to be a checkout transformation and not an edit:
+
+- blob OIDs identical before and after the merge — `cddfd8cd…` (reporting),
+  `03f04a1e…` (search)
+- byte delta exactly **+1 per line** (reporting +1298 over 1298 lines; search
+  +442 over 442 lines); CR byte count equals line count exactly
+- the committed blob bytes hash to exactly the 2A baseline
+
+The apply source was therefore extracted with `git cat-file blob HEAD:<path>`,
+SHA-256-verified immediately before apply, and embedded verbatim (proven by
+stripping the wrapper and re-hashing to a byte-identical round trip). Applying
+the CRLF working-tree copy would have written literal CR bytes into every
+function's `prosrc` and made DEV diverge byte-wise from TEST.
+
+## Apply results
+
+| Migration | SHA-256 verified before apply | Result |
+| --- | --- | --- |
+| `20260807000000_phase_12a_reporting.sql` | `4fffa3d0…4855c5` | Applied cleanly, exit 0, no error |
+| `20260807010000_phase_12a_global_search.sql` | `700b85c0…399654` | Applied cleanly, exit 0, no error |
+
+Both hashes are **identical to the files applied to TEST**. No rollback was
+needed. No 42702 ambiguous-column error occurred. Reporting was applied and
+fully verified before search was applied.
+
+## Read-only catalog preflight (before applying)
+
+**82 checks, 0 failures.** Verified present on DEV beforehand: the four core
+identity tables; the seven report/search base tables; all Phase 11 tables
+including `private.reminder_runs` and `private.notification_dispatch_failures`;
+`private.effective_invoice_status` and `private.can_manage_project`. Phase 11
+fixes confirmed applied — `list_notification_dispatch_failures` exists
+(atomicity fix) and `mark_email_delivery_result` carries the `p_claimed_at`
+claim-identity parameter (claim-identity fix).
+
+All 8 Phase 12A functions and all 24 Phase 12A indexes were confirmed
+**absent**. `pg_trgm` was confirmed **absent**, and schema `extensions` present.
+`SELECT` confirmed granted to `authenticated` and RLS confirmed enabled, with
+at least one policy, on all seven tables.
+
+## Reporting catalog verification
+
+**74 checks, 0 failures.**
+
+- All five report RPCs exist, all **SECURITY DEFINER**, all **stable**, all
+  `search_path=''`.
+- `EXECUTE` granted to `authenticated`; **denied to `anon`**, and no PUBLIC
+  entry in any ACL.
+- All twelve reporting indexes present.
+- `get_project_delivery_report` scopes by `project_manager_id` and **does not
+  reference `can_manage_project`** (verified against live `prosrc`).
+- Pre-existing Phase 11 signatures unchanged; RLS still enabled on all nine
+  checked tables; no table dropped or altered.
+- Private helpers match the approved source exactly:
+  `private.current_internal_actor` is **SECURITY DEFINER**, and
+  `private.resolve_report_window` is intentionally **SECURITY INVOKER** (pure
+  date math, declared with no security clause). Both stable, both
+  `search_path=''`.
+
+### Runtime safety probes
+
+Behaviour only — `resolve_report_window` reads no table, and each RPC raises
+before any aggregate runs, so no business row was scanned or returned.
+
+| Probe | Result |
+| --- | --- |
+| null range | rejected, `P0001`, "A report start date and end date are both required." |
+| reversed range | rejected, `P0001`, "The report end date must not be before the start date." |
+| over 366 days | rejected, `P0001`, "The report date range must not exceed 366 days." |
+| exactly 366 days inclusive | **accepted** (correct boundary) |
+| all five RPCs, unauthenticated | blocked, `P0001`, "You do not have permission to view this report." |
+
+## Search catalog verification
+
+**46 checks, 0 failures.**
+
+- `pg_trgm` installed **in schema `extensions`**, as intended.
+- All twelve trigram indexes present and confirmed **GIN**.
+- `search_workspace` exists as `(p_organization_id uuid, p_query text, p_limit
+  integer default 5)`, is **SECURITY INVOKER** (intentional), **stable**, and
+  `search_path=''`.
+- `EXECUTE` granted to `authenticated`; denied to `anon`; no PUBLIC ACL entry.
+- Explicit active-internal-membership guard present: calls
+  `private.current_internal_actor()` — which filters `membership.status =
+  'active'` and `organization.status = 'active'` — and raises `P0001` on a null
+  actor, null organization, or organization mismatch.
+- All six entity branches present: lead, client, project, proposal, invoice,
+  support_ticket.
+- Per-entity limit clamped `least(greatest(coalesce(p_limit, 5), 1), 5)` and a
+  hard `limit 30` total.
+- No sensitive field is returned. `email` appears **only** inside `ilike` match
+  predicates and index definitions, never as an output column; no monetary or
+  address column is referenced at all.
+- Base-table RLS still enabled on all six; no destructive change; the five
+  reporting RPCs remain intact.
+
+### Runtime safety probes
+
+| Probe | Result |
+| --- | --- |
+| unauthenticated caller | blocked, `P0001`, "You do not have permission to search this workspace." |
+| null organization id | blocked, `P0001`, same message |
+| `anon` holds EXECUTE | no (correct) |
+
+No global search was run over real business records.
+
+## Signature compatibility with the generated types
+
+DEV catalog signatures were compared against the existing
+`src/types/database.ts` (generated from TEST). **All six match**; the file was
+**not** regenerated and **not** edited.
+
+| RPC | DEV signature | Generated TS |
+| --- | --- | --- |
+| `get_lead_conversion_report` | 4 args all `default null` → `jsonb` | 4 optional → `Json` |
+| `get_lead_source_report` | 3 args all `default null` → `jsonb` | 3 optional → `Json` |
+| `get_proposal_win_rate_report` | 3 args all `default null` → `jsonb` | 3 optional → `Json` |
+| `get_revenue_report` | 3 args all `default null` → `jsonb` | 3 optional → `Json` |
+| `get_project_delivery_report` | 5 args all `default null` → `jsonb` | 5 optional → `Json` |
+| `search_workspace` | 2 required + `p_limit default 5` → `table(6 cols)` | 2 required + 1 optional → 6-field array |
+
+## Data safety
+
+**No business data was inspected or modified.** Every DEV statement was catalog
+metadata, `prosrc` inspection, or an error-path probe that raises before
+touching a base table. No `select` was issued against any business row. The two
+probe scripts used session-local `on commit drop` temp tables only; no
+persistent object was created outside the two migrations.
+
+## Deployment status
+
+**Still pending at the time of this entry.** Recorded separately once the
+production deploy and smoke test complete.
