@@ -10,9 +10,14 @@ applied both migrations to DEV.** F-099 → F-104 are `completed`; the Phase 12A
 sub-phase is `completed`. Phase 12 overall remains `in_progress`, because the
 AI features F-090 → F-095 are not implemented.
 
-**DEV rollout is done as of 2026-08-08; the production deployment is still
-pending.** See "Checkpoint 2F — DEV rollout" near the end of this document for
-the migration-history state, application method, and catalog verification.
+**DEV rollout completed 2026-08-08. Production deployed 2026-08-09 and
+verified 2026-08-10.** See "Checkpoint 2F — DEV rollout" for the
+migration-history state, application method, and catalog verification, and
+"Checkpoint 2F — production deployment and verification" for the deployment and
+smoke-test record.
+
+Phase 12 overall remains `in_progress`: F-090 → F-095 (AI) remain `planned` and
+are not started.
 
 ### Platform requirement
 
@@ -1079,8 +1084,15 @@ and both `loading.tsx` boundaries were retained. See "Platform requirement".
 3. Non-blocking — the dashboard tiles use `preset: this_month`, so they show
    live-but-empty figures against a fixture set seeded in March 2026. Numeric
    correctness is proven on the reports themselves against the seeded window.
-4. Resolved in Checkpoint 2F — DEV has now been applied and verified. The
-   production deploy remains a separate step.
+4. Resolved in Checkpoint 2F — DEV applied and verified, production deployed
+   from `f35f847` and verified.
+5. Non-blocking — production scheduled reminders now run **daily** rather than
+   hourly, because the Vercel Hobby plan rejects sub-daily cron schedules.
+   Upgrading to Pro would restore hourly delivery. See "The Hobby-plan cron
+   constraint".
+6. Non-blocking — the Vercel project has no GitHub integration, so pushing to
+   `main` never deploys. Application changes need an explicit
+   `vercel deploy --prod`.
 
 ---
 
@@ -1283,5 +1295,172 @@ persistent object was created outside the two migrations.
 
 ## Deployment status
 
-**Still pending at the time of this entry.** Recorded separately once the
-production deploy and smoke test complete.
+Completed the following day. See the next section.
+
+---
+
+# Checkpoint 2F — production deployment and verification
+
+| Field | Value |
+| --- | --- |
+| Vercel project | `nexfora` (`prj_ezw8h8WIXMDgWAt5izLBQ0Hkupqg`) |
+| Team | `nexfora-team` (NEXFORA TEAM) |
+| Production URL | `https://nexfora-neon.vercel.app` |
+| Deployed commit | `f35f847` |
+| Deployment ID | `dpl_FogwuBUE6g5f8UN84D1TiSes5JAV` |
+| Status | **Ready** (build 53s) |
+| Deployed | 2026-08-09 |
+| Authenticated smoke test | 2026-08-10 |
+
+The deployed history contains `578a004` (implementation), `984658c` (tests and
+documentation), `22ec667` (DEV rollout documentation) and `f35f847` (cron fix).
+
+## No Git auto-deployment on this project
+
+The `22ec667` push created **no** deployment. The project has no GitHub
+integration — there are zero preview deployments in its entire history, and the
+production deployment preceding this one was made by CLI from the
+`chore/use-hobby-daily-cron` branch. Production deployments here are therefore
+explicit CLI actions (`vercel deploy --prod`), never a side effect of pushing.
+
+**Consequence for future checkpoints:** pushing to `main` does not ship
+anything. A documentation-only push leaves the running application untouched,
+which is correct and expected; an application change requires a deliberate
+deploy.
+
+## The Hobby-plan cron constraint
+
+The first deployment attempt **failed before building**:
+
+```
+Hobby accounts are limited to daily cron jobs.
+This cron expression (0 * * * *) would run more than once per day.
+```
+
+This is pre-existing and unrelated to Phase 12A. `main` carried
+`"schedule": "0 * * * *"` (hourly) in `vercel.json`, which the Hobby plan
+rejects — meaning **`main` had never been deployable**. The branch
+`chore/use-hobby-daily-cron` (commit `7a1cf9b`) already held the one-line fix,
+and the then-current production had been built from that branch rather than
+from `main`.
+
+With approval, `7a1cf9b` was cherry-picked onto `main` as `f35f847`:
+
+```diff
+-      "schedule": "0 * * * *"    # hourly
++      "schedule": "0 0 * * *"    # daily
+```
+
+**Accepted trade-off, deliberate:** Phase 11 scheduled reminders — invoice due,
+lead follow-ups, renewals — now run **once daily** in production instead of
+hourly. This is a plan limitation, not a code defect. Restoring hourly delivery
+requires upgrading the Vercel account to Pro.
+
+**Note on the retry:** the successful deploy exited non-zero with repeated
+`Upload aborted` errors. These came from retry workers firing *after* the upload
+had already completed; the deployment was created, built in 53s, reached
+**Ready**, and took the production alias. Verify by inspecting the deployment,
+not by trusting the CLI exit code.
+
+## Environment variables
+
+All seven required Production variable **names** were confirmed present before
+deploying. **No value was read, printed, or modified.**
+
+```
+NEXT_PUBLIC_APP_URL                     NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY    SUPABASE_SECRET_KEY
+CRON_SECRET                             RESEND_API_KEY
+EMAIL_FROM
+```
+
+## Alias verification
+
+`vercel inspect dpl_FogwuBUE6g5f8UN84D1TiSes5JAV` lists
+`https://nexfora-neon.vercel.app` among its aliases, alongside
+`nexfora-git-main-nexfora-team.vercel.app` — confirming the deployment carries
+`main` git metadata. The production alias returned `age: 0` with
+`x-vercel-cache: PRERENDER` immediately afterwards (it had been `age: 381332`
+before), confirming the alias moved and the CDN cache was invalidated.
+
+## Unauthenticated verification — automated, 29/29
+
+Run headless against production before login. Read-only.
+
+| Group | Result |
+| --- | --- |
+| Signed-out redirect, all 9 protected routes | all redirect to `/auth/login` |
+| Public routes (`/`, `/auth/login`, `/start-a-project`, `/estimate`) | all HTTP 200 |
+| Login form (email, password, submit present; **not** submitted) | pass |
+| Desktop 1440×900 — no horizontal overflow | pass |
+| Mobile 390×844 — no horizontal overflow | pass |
+| No raw database error on any scanned page | pass |
+| No hydration error, no console error, no 5xx | pass |
+
+The nine protected routes covered `/admin`, all five report routes,
+`/admin/search` and `/admin/search?q=`.
+
+**Caveat, recorded honestly:** a 307 on an `/admin/*` route does *not* prove the
+route exists — middleware redirects the whole `/admin` subtree, and a
+deliberately fake `/admin/...` path redirects identically (a fake non-admin path
+correctly 404s). Route existence rests on the deploy being built from `f35f847`
+and on the authenticated walkthrough below, not on the redirect.
+
+## Authenticated verification — manual, performed by the owner
+
+**Automated authenticated testing was not possible and was not attempted.** No
+production admin credential exists in the repository or environment; every
+credential in `.env.test.local` is `TEST_*`-prefixed and belongs to the TEST
+project. Minting a session from `SUPABASE_SECRET_KEY` was rejected on principle:
+it bypasses the real auth path, which would make every authorization assertion
+meaningless (the same rule `tests/phase12/e2e/helpers.ts` already states).
+
+The owner therefore performed the walkthrough manually on **2026-08-10**,
+signed in as an authorized admin, and reported the results below.
+
+| # | Check | Result |
+| --- | --- | --- |
+| 1 | Login, `/admin` loads, session persists across navigation, logout, post-logout redirect | **PASS** |
+| 2 | `/admin/reports` — Reports nav visible; all five cards present; no raw error | **PASS** |
+| 3 | Lead Conversion — renders, filters render, null metrics show an em dash not a misleading zero | **PASS** |
+| 4 | Lead Sources — source rows safe, "First-touch" wording correct, currencies separated | **PASS** |
+| 5 | Proposal Win Rate — "Win Rate — Decided Proposals" and "Sent-to-Accepted Rate" distinct; expired not labelled declined | **PASS** |
+| 6 | Revenue — cash-basis, invoice-cohort and point-in-time sections; "Cohort Collection Rate … as of today"; currencies not merged; no 390×844 overflow | **PASS** |
+| 7 | Project Delivery — Schedule On-Time Rate; schedule-adherence disclaimer visible; no team-performance claim | **PASS** |
+| 8 | Global Search — trigger before the bell; Ctrl+K opens; Escape closes; focus returns to trigger; `/admin/search?q=` guidance; no raw error; no unauthorized entity | **PASS** |
+| 9 | Dashboard — authorized summary tiles; no role-inappropriate tile; currencies not silently summed; controls do not interfere | **PASS** |
+| 10 | Responsive at 1440×900 and 390×844 | **PASS** |
+| 11 | Console / network — no critical error, no hydration crash, no unexpected 500, no failed Phase 12 RPC or schema-cache miss, no raw SQL in the UI | **PASS** |
+
+**Skipped: none.** Every check was performed.
+
+Topbar ordering was independently confirmed in source:
+`src/components/layout/admin-topbar.tsx` renders `GlobalSearchTrigger` before
+`NotificationBell`.
+
+## Data safety in production
+
+- The smoke test was **read-only**. The only form submitted was the login form.
+- **No real business record was created, edited, or deleted.** No lead, client,
+  proposal, invoice, payment, project, or ticket was written; no status was
+  changed; no notification was marked read for testing.
+- No fixture and no fake production record was created.
+- No sensitive value was searched — no email, payment identifier, invoice note,
+  token, or provider reference.
+- No credential, JWT, cookie, or environment value was displayed.
+
+## Migration integrity
+
+Both migrations remain **byte-identical** to the files applied to TEST and DEV.
+Blob OIDs are unchanged: `cddfd8cd…` (reporting), `03f04a1e…` (search). No
+Supabase migration, `db push`, `migration up`, `migration repair`, or database
+mutation of any kind was performed during deployment or verification.
+
+## Phase status after this checkpoint
+
+- F-099 → F-104: `completed`, applied and verified on TEST and DEV, deployed to
+  production and verified.
+- Phase 12A sub-phase: `completed`.
+- **Phase 12 overall: `in_progress`.**
+- **F-090 → F-095 (AI): `planned`, not started.**
+- The Nexfora public website: not started.
