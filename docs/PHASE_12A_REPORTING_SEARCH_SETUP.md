@@ -1473,19 +1473,30 @@ mutation of any kind was performed during deployment or verification.
 
 ## Deployment ledger
 
-| Deployment | Commit | Trigger | Status | Holds production alias |
-| --- | --- | --- | --- | --- |
-| `dpl_FogwuBUE6g5f8UN84D1TiSes5JAV` | `f35f847` | manual `vercel deploy --prod` | Ready | superseded |
-| `dpl_HsnyEWy6tb5R8RTrbJm1k4fyztiY` | `5d6fec9` | automatic, on push to `main` | **Ready** | **yes** |
+Because `main` is Git-connected, **every** commit here — including each
+documentation commit that records this checkpoint — produces its own production
+deployment. The ledger is therefore a point-in-time record that a later
+documentation push will extend, not a live pointer.
 
-**Application code is identical across both.** `5d6fec9` changes only this
-markdown file, so the running application is byte-for-byte what `f35f847`
-produced. Stated precisely, to avoid overclaiming:
+| Deployment | Commit | Trigger | Status |
+| --- | --- | --- | --- |
+| `dpl_FogwuBUE6g5f8UN84D1TiSes5JAV` | `f35f847` | manual `vercel deploy --prod` | Ready |
+| `dpl_HsnyEWy6tb5R8RTrbJm1k4fyztiY` | `5d6fec9` | automatic, push to `main` | Ready |
+| `dpl_qARktTGRTse4mAMFJZgHDUrLsbk2` | `7acbf28` | automatic, push to `main` | Ready |
 
-- **Application code last changed at:** `f35f847`
-- **Production is currently deployed from:** `5d6fec9` (documentation-only delta)
+The one statement that does **not** go stale, and the one to rely on:
 
-Both statements are true, and neither should be collapsed into the other.
+> **Application code last changed at `f35f847`.** Every commit after it changes
+> only this markdown file.
+
+So each later deployment ships an application byte-for-byte identical to what
+`f35f847` produced; only the documentation differs. To read the live pointer,
+check which deployment currently holds the `nexfora-neon.vercel.app` alias
+rather than trusting any commit named in this file.
+
+**Do not** collapse "application code last changed at `f35f847`" into "production
+is deployed from `f35f847`" — the second was true only until the next
+documentation push, and the smoke-tested application is the same either way.
 
 ## Phase status after this checkpoint
 
