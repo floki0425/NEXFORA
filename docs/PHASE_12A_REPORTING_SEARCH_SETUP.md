@@ -1090,9 +1090,9 @@ and both `loading.tsx` boundaries were retained. See "Platform requirement".
    hourly, because the Vercel Hobby plan rejects sub-daily cron schedules.
    Upgrading to Pro would restore hourly delivery. See "The Hobby-plan cron
    constraint".
-6. Non-blocking — the Vercel project has no GitHub integration, so pushing to
-   `main` never deploys. Application changes need an explicit
-   `vercel deploy --prod`.
+6. Non-blocking — `main` is Git-connected: every push, documentation included,
+   triggers a production build that must be checked for **Ready**. See "Git
+   auto-deployment — corrected finding".
 
 ---
 
@@ -1315,18 +1315,33 @@ Completed the following day. See the next section.
 The deployed history contains `578a004` (implementation), `984658c` (tests and
 documentation), `22ec667` (DEV rollout documentation) and `f35f847` (cron fix).
 
-## No Git auto-deployment on this project
+## Git auto-deployment — corrected finding
 
-The `22ec667` push created **no** deployment. The project has no GitHub
-integration — there are zero preview deployments in its entire history, and the
-production deployment preceding this one was made by CLI from the
-`chore/use-hobby-daily-cron` branch. Production deployments here are therefore
-explicit CLI actions (`vercel deploy --prod`), never a side effect of pushing.
+**An earlier revision of this document claimed the project had no GitHub
+integration. That was wrong, and the correction matters.**
 
-**Consequence for future checkpoints:** pushing to `main` does not ship
-anything. A documentation-only push leaves the running application untouched,
-which is correct and expected; an application change requires a deliberate
-deploy.
+The evidence that produced the wrong conclusion: the `22ec667` push created no
+deployment, and the project had zero preview deployments in its history. The
+inference drawn from that — "pushes never deploy" — did not survive contact with
+the next push.
+
+What actually happens: **`main` is Git-connected and pushes to it do trigger
+production deployments.** This was proven when the `5d6fec9` documentation push
+created deployment `dpl_HsnyEWy6tb5R8RTrbJm1k4fyztiY` with no
+`vercel deploy` command run at all.
+
+Why `22ec667` looked like it did not deploy: at that commit `vercel.json` still
+carried the hourly cron, so its auto-deploy was **rejected at validation by the
+Hobby-plan cron limit before a deployment record existed** — exactly as the
+first manual CLI attempt was rejected moments later, which also produced no
+record. A build refused at validation leaves nothing in `vercel ls`, so the
+absence of a record was mistaken for the absence of an integration.
+
+**Consequence for future checkpoints:** every push to `main` — including a
+documentation-only push — triggers a production build. Expect one, and verify it
+reaches **Ready**. A rejected build may leave no trace, so absence of a
+deployment record is not evidence that no deploy was attempted; check the
+constraint that would reject it.
 
 ## The Hobby-plan cron constraint
 
@@ -1455,6 +1470,22 @@ Both migrations remain **byte-identical** to the files applied to TEST and DEV.
 Blob OIDs are unchanged: `cddfd8cd…` (reporting), `03f04a1e…` (search). No
 Supabase migration, `db push`, `migration up`, `migration repair`, or database
 mutation of any kind was performed during deployment or verification.
+
+## Deployment ledger
+
+| Deployment | Commit | Trigger | Status | Holds production alias |
+| --- | --- | --- | --- | --- |
+| `dpl_FogwuBUE6g5f8UN84D1TiSes5JAV` | `f35f847` | manual `vercel deploy --prod` | Ready | superseded |
+| `dpl_HsnyEWy6tb5R8RTrbJm1k4fyztiY` | `5d6fec9` | automatic, on push to `main` | **Ready** | **yes** |
+
+**Application code is identical across both.** `5d6fec9` changes only this
+markdown file, so the running application is byte-for-byte what `f35f847`
+produced. Stated precisely, to avoid overclaiming:
+
+- **Application code last changed at:** `f35f847`
+- **Production is currently deployed from:** `5d6fec9` (documentation-only delta)
+
+Both statements are true, and neither should be collapsed into the other.
 
 ## Phase status after this checkpoint
 
