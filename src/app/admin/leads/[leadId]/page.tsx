@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   FileText,
+  Globe,
   Mail,
   Pencil,
   Phone,
@@ -32,6 +33,12 @@ import { formatBudget, formatLeadDate } from "@/features/leads/format";
 import { memberCanManageLeads } from "@/features/leads/permissions";
 import { getLeadDetail } from "@/features/leads/queries";
 import { leadIdSchema } from "@/features/leads/schemas";
+import {
+  websiteInquiryBudgetLabel,
+  websiteInquiryContactMethodLabel,
+  websiteInquiryServiceLabel,
+  websiteInquiryTimelineLabel,
+} from "@/features/leads/website-inquiry";
 import {
   isLeadEligibleForProposal,
   memberCanManageProposals,
@@ -188,6 +195,52 @@ export default async function LeadDetailPage({ params }: LeadPageProps) {
               </dl>
             </CardContent>
           </Card>
+
+          {lead.websiteInquiry ? (
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-3">
+                  <CardTitle>Website inquiry</CardTitle>
+                  <Badge variant="info" className="gap-1.5">
+                    <Globe className="size-3.5" aria-hidden="true" />
+                    Start a Project
+                  </Badge>
+                </div>
+                <CardDescription>
+                  The choices this visitor actually made on the public form,
+                  shown exactly as submitted. The fields above are the CRM&rsquo;s
+                  normalized version of the same answers.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid gap-6 sm:grid-cols-2">
+                  <DataItem label="Preferred contact">
+                    {websiteInquiryContactMethodLabel(
+                      lead.websiteInquiry.preferredContactMethod,
+                    )}
+                  </DataItem>
+                  <DataItem label="Service needed">
+                    {websiteInquiryServiceLabel(
+                      lead.websiteInquiry.serviceNeeded,
+                    )}
+                  </DataItem>
+                  <DataItem label="Estimated budget">
+                    {websiteInquiryBudgetLabel(
+                      lead.websiteInquiry.estimatedBudget,
+                    )}
+                  </DataItem>
+                  <DataItem label="Target timeline">
+                    {websiteInquiryTimelineLabel(
+                      lead.websiteInquiry.targetTimeline,
+                    )}
+                  </DataItem>
+                  <DataItem label="Submitted on the website">
+                    {formatLeadDate(lead.websiteInquiry.submittedAt)}
+                  </DataItem>
+                </dl>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader>

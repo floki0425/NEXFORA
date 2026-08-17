@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "npm run test:core && npm run test:phase8 && npm run test:phase9 && npm run test:phase10 && npm run test:phase11",
+    "test": "npm run test:core && npm run test:os-l1 && npm run test:phase8 && npm run test:phase9 && npm run test:phase10 && npm run test:phase11",
     "test:core": "node --experimental-test-module-mocks --import ./tests/support/register-app-alias-loader.mjs --test tests/auth/password-recovery.test.mjs tests/auth/callback-route.test.mjs tests/auth/update-password-action.test.mjs tests/leads/lead-foundation.test.mjs tests/clients/client-management.test.mjs tests/projects/project-management.test.mjs tests/proposals/proposal-system.test.mjs tests/portal/client-portal.test.mjs tests/files/project-files.test.mjs tests/revisions/revisions.test.mjs",
     "test:phase8:unit": "node --test tests/phase8/unit/file-validation.test.mjs tests/phase8/unit/storage-path.test.mjs tests/phase8/unit/revision-validation.test.mjs tests/phase8/unit/revision-transitions.test.mjs tests/phase8/unit/error-and-cleanup.test.mjs",
     "test:phase8:integration": "node --test --test-concurrency=1 tests/phase8/integration/rls-files-and-revisions.test.mjs tests/phase8/integration/storage.test.mjs tests/phase8/integration/revision-workflow.test.mjs",
@@ -40,7 +40,8 @@
     "test:phase12": "npm run test:phase12:unit && npm run test:phase12:integration",
     "dev:e2e:phase12": "node scripts/start-phase12-e2e-server.mjs",
     "test:e2e:phase12": "playwright test --config=playwright.phase12.config.ts",
-    "test:phase12:all": "npm run test:phase12:unit && npm run test:phase12:integration && npm run test:e2e:phase12"
+    "test:phase12:all": "npm run test:phase12:unit && npm run test:phase12:integration && npm run test:e2e:phase12",
+    "test:os-l1": "node --experimental-test-module-mocks --import ./tests/support/register-app-alias-loader.mjs --test tests/os-l1/unit/signature.test.mjs tests/os-l1/unit/payload-and-labels.test.mjs tests/os-l1/unit/migration-ingestion-authorization.test.mjs tests/os-l1/unit/migration-idempotency-and-mapping.test.mjs tests/os-l1/unit/route-authorization.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.3",

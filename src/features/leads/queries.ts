@@ -140,6 +140,22 @@ export async function getLeadDetail(
     throw new Error("Unable to load lead activity.");
   }
 
+  // Present only for leads forwarded from the public website's "Start a
+  // Project" form; every other lead returns no row, which is not an error.
+  // The ledger's identifiers are never selected — see WebsiteInquiryDetail.
+  const { data: websiteInquiry, error: websiteInquiryError } = await supabase
+    .from("website_inquiry_imports")
+    .select(
+      "preferred_contact_method, service_needed, estimated_budget, target_timeline, submitted_at",
+    )
+    .eq("organization_id", organizationId)
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  if (websiteInquiryError) {
+    throw new Error("Unable to load the website inquiry for this lead.");
+  }
+
   const profileIds = [
     ...(lead.assigned_to ? [lead.assigned_to] : []),
     ...(activities ?? []).flatMap((activity) =>
@@ -161,6 +177,15 @@ export async function getLeadDetail(
         ? (profileNames.get(activity.created_by) ?? null)
         : null,
     })) as LeadActivityItem[],
+    websiteInquiry: websiteInquiry
+      ? {
+          preferredContactMethod: websiteInquiry.preferred_contact_method,
+          serviceNeeded: websiteInquiry.service_needed,
+          estimatedBudget: websiteInquiry.estimated_budget,
+          targetTimeline: websiteInquiry.target_timeline,
+          submittedAt: websiteInquiry.submitted_at,
+        }
+      : null,
   } as LeadDetail;
 }
 

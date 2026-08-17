@@ -27,6 +27,12 @@ const serverEnvSchema = z.object({
   // dev and tests do not need it since the manual "Run reminders now" admin
   // action does not go through the HTTP route.
   CRON_SECRET: z.string().trim().min(32).optional(),
+  // Optional: shared HMAC secret for the Nexfora website's project-inquiry
+  // forwarding endpoint (OS-L1, POST /api/webhooks/website-inquiry). When
+  // unset the route rejects every request with 401 rather than accepting
+  // unsigned ones — see src/lib/website-inquiry/signature.ts. Nothing else
+  // in the application reads it, so local dev and tests do not need it.
+  WEBSITE_INQUIRY_WEBHOOK_SECRET: z.string().trim().min(32).optional(),
 });
 
 const serverEnvResult = serverEnvSchema.safeParse({
@@ -36,6 +42,8 @@ const serverEnvResult = serverEnvSchema.safeParse({
   PAYMONGO_SECRET_KEY: process.env.PAYMONGO_SECRET_KEY || undefined,
   PAYMONGO_WEBHOOK_SECRET: process.env.PAYMONGO_WEBHOOK_SECRET || undefined,
   CRON_SECRET: process.env.CRON_SECRET || undefined,
+  WEBSITE_INQUIRY_WEBHOOK_SECRET:
+    process.env.WEBSITE_INQUIRY_WEBHOOK_SECRET || undefined,
 });
 
 if (!serverEnvResult.success) {

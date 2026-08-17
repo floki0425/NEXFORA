@@ -17,11 +17,26 @@ export interface LeadActivityItem extends LeadActivityRow {
   authorName: string | null;
 }
 
+/**
+ * The website-only facts about a lead that originated from the public
+ * "Start a Project" form. Present only for those leads; every other lead
+ * has `websiteInquiry: null`. Deliberately omits the sync ledger's internal
+ * identifiers (id, idempotency_key) — nothing in the UI needs them.
+ */
+export interface WebsiteInquiryDetail {
+  preferredContactMethod: string;
+  serviceNeeded: string;
+  estimatedBudget: string | null;
+  targetTimeline: string | null;
+  submittedAt: string;
+}
+
 export interface LeadDetail extends Omit<LeadRow, "source" | "status"> {
   source: LeadSource;
   status: LeadStatus;
   assigneeName: string | null;
   activities: LeadActivityItem[];
+  websiteInquiry: WebsiteInquiryDetail | null;
 }
 
 export interface MemberOption {

@@ -1964,6 +1964,60 @@ export type Database = {
           },
         ]
       }
+      website_inquiry_imports: {
+        Row: {
+          estimated_budget: string | null
+          id: string
+          idempotency_key: string
+          lead_id: string
+          organization_id: string
+          preferred_contact_method: string
+          received_at: string
+          service_needed: string
+          submitted_at: string
+          target_timeline: string | null
+        }
+        Insert: {
+          estimated_budget?: string | null
+          id?: string
+          idempotency_key: string
+          lead_id: string
+          organization_id: string
+          preferred_contact_method: string
+          received_at?: string
+          service_needed: string
+          submitted_at: string
+          target_timeline?: string | null
+        }
+        Update: {
+          estimated_budget?: string | null
+          id?: string
+          idempotency_key?: string
+          lead_id?: string
+          organization_id?: string
+          preferred_contact_method?: string
+          received_at?: string
+          service_needed?: string
+          submitted_at?: string
+          target_timeline?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_inquiry_imports_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_inquiry_imports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2325,6 +2379,22 @@ export type Database = {
       }
       get_revenue_report: {
         Args: { p_client_id?: string; p_from?: string; p_to?: string }
+        Returns: Json
+      }
+      ingest_website_project_inquiry: {
+        Args: {
+          p_business_organization: string
+          p_email: string
+          p_estimated_budget: string
+          p_full_name: string
+          p_idempotency_key: string
+          p_phone: string
+          p_preferred_contact_method: string
+          p_project_description: string
+          p_service_needed: string
+          p_submitted_at: string
+          p_target_timeline: string
+        }
         Returns: Json
       }
       list_audit_logs: {

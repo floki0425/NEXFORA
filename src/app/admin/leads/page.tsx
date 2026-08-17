@@ -16,7 +16,7 @@ import {
   LEAD_STATUS_BADGES,
   LEAD_STATUS_LABELS,
 } from "@/features/leads/constants";
-import { formatLeadDate } from "@/features/leads/format";
+import { formatBudget, formatLeadDate } from "@/features/leads/format";
 import { memberCanManageLeads } from "@/features/leads/permissions";
 import {
   getLeadPage,
@@ -176,9 +176,11 @@ export default async function LeadsPage({
                 <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-text-muted">
                   <tr>
                     <th scope="col" className="px-5 py-3 font-semibold">Lead</th>
+                    <th scope="col" className="px-5 py-3 font-semibold">Project</th>
                     <th scope="col" className="px-5 py-3 font-semibold">Status</th>
                     <th scope="col" className="px-5 py-3 font-semibold">Source</th>
                     <th scope="col" className="px-5 py-3 font-semibold">Assignee</th>
+                    <th scope="col" className="px-5 py-3 font-semibold">Submitted</th>
                     <th scope="col" className="px-5 py-3 font-semibold">Updated</th>
                   </tr>
                 </thead>
@@ -192,10 +194,15 @@ export default async function LeadsPage({
                         <p className="mt-1 text-text-muted">{lead.business_name ?? lead.email}</p>
                       </td>
                       <td className="px-5 py-4">
+                        <p className="text-text-secondary">{lead.service_interest}</p>
+                        <p className="mt-1 text-text-muted">{formatBudget(lead.budget_min, lead.budget_max)}</p>
+                      </td>
+                      <td className="px-5 py-4">
                         <Badge variant={LEAD_STATUS_BADGES[lead.status]}>{LEAD_STATUS_LABELS[lead.status]}</Badge>
                       </td>
                       <td className="px-5 py-4 text-text-secondary">{LEAD_SOURCE_LABELS[lead.source]}</td>
                       <td className="px-5 py-4 text-text-secondary">{lead.assigneeName ?? "Unassigned"}</td>
+                      <td className="px-5 py-4 text-text-secondary">{formatLeadDate(lead.created_at)}</td>
                       <td className="px-5 py-4 text-text-secondary">{formatLeadDate(lead.updated_at)}</td>
                     </tr>
                   ))}
@@ -212,10 +219,13 @@ export default async function LeadsPage({
                     </div>
                     <Badge variant={LEAD_STATUS_BADGES[lead.status]}>{LEAD_STATUS_LABELS[lead.status]}</Badge>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
+                  <p className="mt-3 text-sm text-text-secondary">
+                    {lead.service_interest} · {formatBudget(lead.budget_min, lead.budget_max)}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
                     <span>{LEAD_SOURCE_LABELS[lead.source]}</span>
                     <span>{lead.assigneeName ?? "Unassigned"}</span>
-                    <span>{formatLeadDate(lead.updated_at)}</span>
+                    <span>Submitted {formatLeadDate(lead.created_at)}</span>
                   </div>
                 </Link>
               ))}
