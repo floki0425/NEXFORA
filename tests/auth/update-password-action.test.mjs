@@ -60,9 +60,17 @@ mock.module("@/lib/auth/server", {
   },
 });
 
+// Captures the coarse reason each recovery dead end records. The action
+// redirects to the same URL either way, so this is the only signal that
+// distinguishes a missing session from a missing recovery marker.
+const recoveryIssueLogCalls = [];
+
 mock.module("@/lib/auth/diagnostics", {
   namedExports: {
     logSupabaseAuthError: () => {},
+    logAuthRecoveryIssue: (stage, reason) => {
+      recoveryIssueLogCalls.push({ stage, reason });
+    },
   },
 });
 
@@ -103,4 +111,94 @@ test("a successful password reset requests a global sign-out, not just the local
   assert.deepEqual(signOutImpl.mock.calls[0].arguments[0], { scope: "global" });
   assert.equal(digest, "NEXT_REDIRECT;replace;/auth/login?password_updated=true;307;");
   assert.equal(clearRecoverySessionMarkerCalls, 1);
+});
+
+
+// --- Guard tests: the password mutation must be unreachable without BOTH a
+// verified Supabase recovery session and the server-signed marker the
+// callback issues. Both dead ends redirect to the same URL, so each also
+// records a distinct reason (previously they were silent).
+
+test("a submission without a Supabase session never updates the password", async () => {
+  getUserImpl = mock.fn(async () => ({ data: { user: null }, error: null }));
+  updateUserImpl = mock.fn(async () => {
+    throw new Error("updateUser must not be called without a session");
+  });
+  signOutImpl = mock.fn(async () => ({ error: null }));
+  hasValidRecoverySessionMarkerImpl = async () => true;
+  clearRecoverySessionMarkerCalls = 0;
+  recoveryIssueLogCalls.length = 0;
+
+  const digest = await callUpdatePassword(buildValidPasswordFormData());
+
+  assert.ok(
+    digest.includes("/auth/forgot-password?error=invalid_reset_link"),
+    "must redirect to the shared recovery failure page",
+  );
+  assert.equal(updateUserImpl.mock.calls.length, 0);
+  assert.equal(clearRecoverySessionMarkerCalls, 0);
+  assert.deepEqual(recoveryIssueLogCalls, [
+    { stage: "update-password action", reason: "no_recovery_user_session" },
+  ]);
+});
+
+test("a valid session without the recovery marker never updates the password", async () => {
+  getUserImpl = mock.fn(async () => ({
+    data: { user: { id: "signed-in-but-not-recovering" } },
+    error: null,
+  }));
+  updateUserImpl = mock.fn(async () => {
+    throw new Error("updateUser must not be called without a recovery marker");
+  });
+  signOutImpl = mock.fn(async () => ({ error: null }));
+  hasValidRecoverySessionMarkerImpl = async () => false;
+  clearRecoverySessionMarkerCalls = 0;
+  recoveryIssueLogCalls.length = 0;
+
+  const digest = await callUpdatePassword(buildValidPasswordFormData());
+
+  assert.ok(
+    digest.includes("/auth/forgot-password?error=invalid_reset_link"),
+    "must redirect to the shared recovery failure page",
+  );
+  assert.equal(updateUserImpl.mock.calls.length, 0);
+  assert.deepEqual(recoveryIssueLogCalls, [
+    { stage: "update-password action", reason: "no_recovery_marker" },
+  ]);
+});
+
+test("a mismatched confirmation is rejected before any Supabase call", async () => {
+  getUserImpl = mock.fn(async () => {
+    throw new Error("getUser must not be called for an invalid form");
+  });
+  updateUserImpl = mock.fn(async () => {
+    throw new Error("updateUser must not be called for an invalid form");
+  });
+  recoveryIssueLogCalls.length = 0;
+
+  const formData = new FormData();
+  formData.set("password", "StrongPassword1!");
+  formData.set("passwordConfirmation", "DifferentPassword1!");
+
+  const result = await updatePassword({ status: "idle", message: "" }, formData);
+
+  assert.equal(result.status, "error");
+  assert.equal(result.fieldErrors.passwordConfirmation, "The passwords do not match.");
+  assert.equal(getUserImpl.mock.calls.length, 0);
+  assert.equal(updateUserImpl.mock.calls.length, 0);
+});
+
+test("no password value ever reaches an action result or a recovery log", async () => {
+  getUserImpl = mock.fn(async () => ({ data: { user: null }, error: null }));
+  hasValidRecoverySessionMarkerImpl = async () => false;
+  recoveryIssueLogCalls.length = 0;
+
+  const formData = new FormData();
+  formData.set("password", "Sup3rSecret!Value");
+  formData.set("passwordConfirmation", "Sup3rSecret!Value");
+
+  const digest = await callUpdatePassword(formData);
+
+  const surfaced = JSON.stringify({ digest, recoveryIssueLogCalls });
+  assert.ok(!surfaced.includes("Sup3rSecret!Value"));
 });

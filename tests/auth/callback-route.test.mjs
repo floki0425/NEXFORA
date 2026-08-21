@@ -22,6 +22,9 @@ process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test_key";
 const APP_URL = "http://localhost:3000";
 const UPDATE_PASSWORD_URL = `${APP_URL}/auth/update-password`;
 const RECOVERY_FAILURE_URL = `${APP_URL}/auth/forgot-password?error=invalid_reset_link`;
+// A newline plus a fake `reason=` field: if the sanitizer let either through,
+// a provider-controlled value could forge a second log line.
+const HOSTILE_ERROR_CODE = ["bad", "code injected reason=spoofed"].join(String.fromCharCode(10));
 
 let exchangeCodeForSessionImpl = async () => {
   throw new Error("exchangeCodeForSession stub not configured for this test");
@@ -31,6 +34,7 @@ let verifyOtpImpl = async () => {
 };
 let recoveryMarkerCalls = [];
 let authErrorLogCalls = [];
+let recoveryIssueLogCalls = [];
 
 // Registered once at module load. Each test reassigns the *Impl variables
 // above instead of re-mocking, since re-importing the already-evaluated
@@ -59,6 +63,9 @@ mock.module("@/lib/auth/diagnostics", {
     logSupabaseAuthError: (...args) => {
       authErrorLogCalls.push(args);
     },
+    logAuthRecoveryIssue: (stage, reason) => {
+      recoveryIssueLogCalls.push({ stage, reason });
+    },
   },
 });
 
@@ -84,6 +91,7 @@ function primeMocks({ exchangeCodeForSession, verifyOtp } = {}) {
   );
   recoveryMarkerCalls = [];
   authErrorLogCalls = [];
+  recoveryIssueLogCalls = [];
 }
 
 function successResult(userId) {
@@ -231,4 +239,110 @@ test("a recovery link verified while a different user's session is already prese
 
   assert.equal(response.headers.get("location"), UPDATE_PASSWORD_URL);
   assert.deepEqual(recoveryMarkerCalls, ["verified-recovery-owner-999"]);
+});
+
+
+// --- Regression tests for the silent-failure bug -------------------------
+//
+// Every recovery dead end deliberately ends on the same user-facing URL, so
+// before these branches logged a reason there was no way to tell an expired
+// link from a hand-typed one. Supabase reports a rejected link in the URL
+// fragment, which never reaches the server, so the no-parameter case below
+// is what a real expired link actually looks like to this route.
+
+test("a callback with no parameters at all records a reason instead of failing silently", async () => {
+  primeMocks();
+
+  const response = await GET(buildRequest(""));
+
+  assert.equal(response.headers.get("location"), RECOVERY_FAILURE_URL);
+  assert.equal(recoveryIssueLogCalls.length, 1);
+  assert.equal(recoveryIssueLogCalls[0].reason, "missing_callback_parameters");
+  assert.equal(exchangeCodeForSessionImpl.mock.callCount(), 0);
+  assert.equal(verifyOtpImpl.mock.callCount(), 0);
+  assert.equal(recoveryMarkerCalls.length, 0);
+});
+
+test("a provider error in the query string is recorded with its sanitized code", async () => {
+  primeMocks();
+
+  const response = await GET(
+    buildRequest("?error=access_denied&error_code=otp_expired"),
+  );
+
+  assert.equal(response.headers.get("location"), RECOVERY_FAILURE_URL);
+  assert.equal(recoveryIssueLogCalls.length, 1);
+  assert.equal(recoveryIssueLogCalls[0].reason, "provider_reported_error");
+  assert.match(recoveryIssueLogCalls[0].stage, /otp_expired/);
+});
+
+test("a hostile error_code cannot inject anything into the log line", async () => {
+  primeMocks();
+
+  await GET(
+    buildRequest(
+      "?error_code=" + encodeURIComponent(HOSTILE_ERROR_CODE),
+    ),
+  );
+
+  assert.equal(recoveryIssueLogCalls.length, 1);
+  // Sanitized to [a-z0-9_] only, so no newline, space, or `=` survives.
+  assert.ok(
+    recoveryIssueLogCalls[0].stage.includes(
+      "error_code=badcodeinjectedreasonspoofed",
+    ),
+    "sanitizer must strip the newline, the spaces, and the second `=`",
+  );
+});
+
+test("a rejected exchange records the verification reason and never leaks the error", async () => {
+  primeMocks({
+    exchangeCodeForSession: async () => ({
+      data: { user: null },
+      error: { message: "invalid flow state", code: "flow_state_not_found" },
+    }),
+  });
+
+  const response = await GET(buildRequest("?code=some-code"));
+
+  assert.equal(response.headers.get("location"), RECOVERY_FAILURE_URL);
+  assert.equal(recoveryIssueLogCalls[0].reason, "verification_rejected");
+  assert.equal(recoveryMarkerCalls.length, 0);
+  assert.ok(!response.headers.get("location").includes("some-code"));
+});
+
+test("a success-shaped response with no user is reported distinctly from a rejection", async () => {
+  primeMocks({
+    exchangeCodeForSession: async () => ({ data: { user: null }, error: null }),
+  });
+
+  await GET(buildRequest("?code=some-code"));
+
+  assert.equal(
+    recoveryIssueLogCalls[0].reason,
+    "verification_returned_no_user",
+  );
+});
+
+test("a successful recovery records no failure reason", async () => {
+  primeMocks({
+    exchangeCodeForSession: async () => successResult("user-success"),
+  });
+
+  const response = await GET(buildRequest("?code=some-code"));
+
+  assert.equal(response.headers.get("location"), UPDATE_PASSWORD_URL);
+  assert.deepEqual(recoveryIssueLogCalls, []);
+  assert.deepEqual(recoveryMarkerCalls, ["user-success"]);
+});
+
+test("no recovery code, token hash, or query string ever reaches a log argument", async () => {
+  primeMocks({
+    exchangeCodeForSession: async () => ({ data: { user: null }, error: { message: "nope" } }),
+  });
+
+  await GET(buildRequest("?code=super-secret-recovery-code"));
+
+  const logged = JSON.stringify({ recoveryIssueLogCalls, authErrorLogCalls });
+  assert.ok(!logged.includes("super-secret-recovery-code"));
 });

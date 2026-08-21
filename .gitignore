@@ -37,6 +37,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# raw run logs. A committed test/CI log is a standing leak vector: it can
+# capture headers, connection strings, or fixture credentials on a future
+# failure. No tracked file matches *.log, so this excludes nothing needed.
+*.log
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example

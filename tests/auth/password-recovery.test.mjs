@@ -10,6 +10,7 @@ import {
   isValidRecoveryOtpType,
   PASSWORD_RESET_SUCCESS_MESSAGE,
   updatePasswordSchema,
+  sanitizeProviderErrorCode,
 } from "../../src/features/auth/recovery.ts";
 
 test("accepts and normalizes a valid email address", () => {
@@ -185,4 +186,36 @@ test("accepts a strong matching password", () => {
   });
 
   assert.equal(result.success, true);
+});
+
+
+// sanitizeProviderErrorCode feeds a server log line. Supabase supplies the
+// value over the network, so it is untrusted input: anything that could
+// forge a log line or carry part of a one-time token must be stripped.
+
+test("keeps a well-formed provider error code", () => {
+  assert.equal(sanitizeProviderErrorCode("otp_expired"), "otp_expired");
+  assert.equal(sanitizeProviderErrorCode("ACCESS_DENIED"), "access_denied");
+  assert.equal(sanitizeProviderErrorCode("  flow_state_not_found  "), "flow_state_not_found");
+});
+
+test("treats a missing or empty provider error code as absent", () => {
+  assert.equal(sanitizeProviderErrorCode(null), null);
+  assert.equal(sanitizeProviderErrorCode(""), null);
+  assert.equal(sanitizeProviderErrorCode("   "), null);
+  assert.equal(sanitizeProviderErrorCode("!!!"), null);
+});
+
+test("strips characters that could forge a log line", () => {
+  const hostile = ["otp_expired", "reason=spoofed"].join(String.fromCharCode(10));
+  const sanitized = sanitizeProviderErrorCode(hostile);
+
+  assert.ok(!sanitized.includes(String.fromCharCode(10)));
+  assert.ok(!sanitized.includes(" "));
+  assert.ok(!sanitized.includes("="));
+  assert.equal(sanitized, "otp_expiredreasonspoofed");
+});
+
+test("bounds the provider error code so a long value cannot flood the log", () => {
+  assert.equal(sanitizeProviderErrorCode("a".repeat(500)).length, 64);
 });

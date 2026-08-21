@@ -12,8 +12,13 @@ The two applications do **not** share a database:
 
 | | Supabase project |
 | --- | --- |
-| Nexfora website (`NEXFORA-WEBSITE/nexfora-website`) | `bjthzxewxqyzutxgpead` |
-| NEXFORA OS (this repository) | `qcuhdysqijrozhzasnbe` |
+| Nexfora website (`NEXFORA-WEBSITE/nexfora-website`) | its own project (`SUPABASE_URL` in that repo) |
+| NEXFORA OS (this repository) | a *different* project (`NEXT_PUBLIC_SUPABASE_URL` here) |
+
+> Project refs are deliberately not written down here. They live only in
+> untracked env files, go stale the moment a project is swapped, and a wrong
+> ref in a runbook is worse than no ref. Read the current value from the
+> relevant environment variable.
 
 There is therefore no RLS policy, JWT claim, or foreign key that could reach
 across them. Two further facts settle the design:
@@ -128,8 +133,14 @@ Set it in Vercel for Production and Preview. Never commit a real value.
 ### Applying the migration
 
 `supabase/migrations/20260817000000_os_l1_website_inquiry_ingestion.sql`
-has **not** been applied anywhere. It is additive: it creates one table,
+is additive: it creates one table,
 one index, one policy, and one function, and alters no existing object.
+
+**Applied state is per-project and is not tracked in this repository.** The
+committed `src/types/database.ts` already contains `website_inquiry_imports`
+and `ingest_website_project_inquiry`, so it has been applied to at least the
+project those types were generated from. Confirm against the project you are
+actually targeting before assuming either way — `supabase migration list`.
 
 ```bash
 # unit tier first — it parses the SQL and gates the apply
@@ -144,6 +155,12 @@ hand-written entries added for `website_inquiry_imports` and
 `ingest_website_project_inquiry`:
 
 ```bash
+# NOTE: do NOT use `>` in Windows PowerShell 5.1 — it writes UTF-16LE,
+# which ESLint then rejects as a binary file. Force UTF-8:
+npx supabase gen types typescript --project-id <ref> |
+  Out-File -Encoding utf8 src/types/database.ts
+
+# bash / zsh / macOS / Linux:
 npx supabase gen types typescript --project-id <ref> > src/types/database.ts
 npm run typecheck
 ```

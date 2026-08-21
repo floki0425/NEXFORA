@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
     "test": "npm run test:core && npm run test:os-l1 && npm run test:phase8 && npm run test:phase9 && npm run test:phase10 && npm run test:phase11",
@@ -41,7 +41,7 @@
     "dev:e2e:phase12": "node scripts/start-phase12-e2e-server.mjs",
     "test:e2e:phase12": "playwright test --config=playwright.phase12.config.ts",
     "test:phase12:all": "npm run test:phase12:unit && npm run test:phase12:integration && npm run test:e2e:phase12",
-    "test:os-l1": "node --experimental-test-module-mocks --import ./tests/support/register-app-alias-loader.mjs --test tests/os-l1/unit/signature.test.mjs tests/os-l1/unit/payload-and-labels.test.mjs tests/os-l1/unit/migration-ingestion-authorization.test.mjs tests/os-l1/unit/migration-idempotency-and-mapping.test.mjs tests/os-l1/unit/route-authorization.test.mjs"
+    "test:os-l1": "node --experimental-test-module-mocks --import ./tests/support/register-app-alias-loader.mjs --test tests/os-l1/unit/signature.test.mjs tests/os-l1/unit/payload-and-labels.test.mjs tests/os-l1/unit/migration-ingestion-authorization.test.mjs tests/os-l1/unit/migration-idempotency-and-mapping.test.mjs tests/os-l1/unit/route-authorization.test.mjs tests/os-l1/unit/migration-sql-syntax-qualification.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.3",

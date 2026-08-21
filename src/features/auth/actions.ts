@@ -10,7 +10,10 @@ import {
   PASSWORD_RESET_SUCCESS_MESSAGE,
   updatePasswordSchema,
 } from "@/features/auth/recovery";
-import { logSupabaseAuthError } from "@/lib/auth/diagnostics";
+import {
+  logAuthRecoveryIssue,
+  logSupabaseAuthError,
+} from "@/lib/auth/diagnostics";
 import { AuthorizationLookupError } from "@/lib/auth/errors";
 import {
   clearRecoverySessionMarker,
@@ -229,11 +232,13 @@ export async function updatePassword(
   const { data: userData, error: userError } =
     await supabase.auth.getUser();
 
-  if (
-    userError ||
-    !userData.user ||
-    !(await hasValidRecoverySessionMarker(userData.user.id))
-  ) {
+  if (userError || !userData.user) {
+    logAuthRecoveryIssue("update-password action", "no_recovery_user_session");
+    redirect("/auth/forgot-password?error=invalid_reset_link");
+  }
+
+  if (!(await hasValidRecoverySessionMarker(userData.user.id))) {
+    logAuthRecoveryIssue("update-password action", "no_recovery_marker");
     redirect("/auth/forgot-password?error=invalid_reset_link");
   }
 

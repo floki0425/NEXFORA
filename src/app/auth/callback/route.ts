@@ -5,8 +5,12 @@ import {
   isValidAuthCallbackCode,
   isValidAuthCallbackTokenHash,
   isValidRecoveryOtpType,
+  sanitizeProviderErrorCode,
 } from "@/features/auth/recovery";
-import { logSupabaseAuthError } from "@/lib/auth/diagnostics";
+import {
+  logAuthRecoveryIssue,
+  logSupabaseAuthError,
+} from "@/lib/auth/diagnostics";
 import { setRecoverySessionMarker } from "@/lib/auth/recovery-session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,18 +22,44 @@ function createApplicationUrl(path: string): URL {
   return new URL(path, publicEnv.NEXT_PUBLIC_APP_URL);
 }
 
+function recoveryFailure(): NextResponse {
+  return NextResponse.redirect(createApplicationUrl(RECOVERY_FAILURE_PATH));
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const code = request.nextUrl.searchParams.get("code");
-  const tokenHash = request.nextUrl.searchParams.get("token_hash");
-  const otpType = request.nextUrl.searchParams.get("type");
+  const searchParams = request.nextUrl.searchParams;
+  const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const otpType = searchParams.get("type");
 
   const hasValidTokenHash =
     isValidAuthCallbackTokenHash(tokenHash) && isValidRecoveryOtpType(otpType);
 
   if (!isValidAuthCallbackCode(code) && !hasValidTokenHash) {
-    return NextResponse.redirect(
-      createApplicationUrl(RECOVERY_FAILURE_PATH),
+    // Supabase rejects a link in one of two shapes. The PKCE shape puts
+    // `error`/`error_code` in the query string, which is readable here. The
+    // implicit shape puts them in the URL *fragment*, which browsers never
+    // send to the server — so an expired or already-consumed link arrives
+    // with no parameters at all and is indistinguishable from a hand-typed
+    // URL. Both end on the same user-facing failure page; only the log
+    // tells them apart.
+    const providerErrorCode = sanitizeProviderErrorCode(
+      searchParams.get("error_code") ?? searchParams.get("error"),
     );
+
+    if (providerErrorCode) {
+      logAuthRecoveryIssue(
+        `callback (provider error_code=${providerErrorCode})`,
+        "provider_reported_error",
+      );
+    } else {
+      logAuthRecoveryIssue(
+        "callback (no query parameters; check the URL fragment for #error=...)",
+        "missing_callback_parameters",
+      );
+    }
+
+    return recoveryFailure();
   }
 
   try {
@@ -49,10 +79,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           : "password recovery token verification",
         error,
       );
-
-      return NextResponse.redirect(
-        createApplicationUrl(RECOVERY_FAILURE_PATH),
+      logAuthRecoveryIssue(
+        isValidAuthCallbackCode(code) ? "callback (code)" : "callback (token_hash)",
+        error ? "verification_rejected" : "verification_returned_no_user",
       );
+
+      return recoveryFailure();
     }
 
     await setRecoverySessionMarker(data.user.id);
@@ -64,9 +96,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(createApplicationUrl(UPDATE_PASSWORD_PATH));
   } catch (error) {
     logSupabaseAuthError("password recovery callback", error);
+    logAuthRecoveryIssue("callback (unexpected)", "verification_rejected");
 
-    return NextResponse.redirect(
-      createApplicationUrl(RECOVERY_FAILURE_PATH),
-    );
+    return recoveryFailure();
   }
 }

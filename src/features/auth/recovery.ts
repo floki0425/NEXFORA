@@ -105,3 +105,23 @@ export function getSafeInternalRedirectPath(
     return fallback;
   }
 }
+
+/**
+ * Narrows a Supabase-supplied `error_code`/`error` query value to a short,
+ * fixed-shape token safe to write to a server log.
+ *
+ * The value arrives from the network, so it is treated as untrusted: only
+ * lowercase letters, digits and underscores survive, and the result is
+ * truncated. This exists so a rejected recovery link can be diagnosed by
+ * its provider code (e.g. `otp_expired`) without ever logging the raw
+ * query string, which also carries the one-time token.
+ */
+export function sanitizeProviderErrorCode(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+
+  return normalized ? normalized.slice(0, 64) : null;
+}

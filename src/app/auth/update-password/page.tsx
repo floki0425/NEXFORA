@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthPageShell } from "@/features/auth/components/auth-page-shell";
 import { UpdatePasswordForm } from "@/features/auth/components/update-password-form";
+import { logAuthRecoveryIssue } from "@/lib/auth/diagnostics";
 import { hasValidRecoverySessionMarker } from "@/lib/auth/recovery-session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,11 +25,17 @@ export default async function UpdatePasswordPage() {
     error,
   } = await supabase.auth.getUser();
 
-  if (
-    error ||
-    !user ||
-    !(await hasValidRecoverySessionMarker(user.id))
-  ) {
+  // Both guards below end on the same user-facing failure URL the callback
+  // uses, so the log is the only thing that distinguishes "the callback never
+  // ran, or the link was opened in a different browser" from "the callback
+  // ran but its marker is missing or expired".
+  if (error || !user) {
+    logAuthRecoveryIssue("update-password page", "no_recovery_user_session");
+    redirect("/auth/forgot-password?error=invalid_reset_link");
+  }
+
+  if (!(await hasValidRecoverySessionMarker(user.id))) {
+    logAuthRecoveryIssue("update-password page", "no_recovery_marker");
     redirect("/auth/forgot-password?error=invalid_reset_link");
   }
 

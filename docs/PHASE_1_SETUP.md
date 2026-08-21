@@ -50,13 +50,13 @@ In the Supabase Dashboard:
 3. Set the development **Site URL** to:
 
    ```text
-   http://localhost:3000
+   http://localhost:3001
    ```
 
 4. Add this development **Redirect URL**:
 
    ```text
-   http://localhost:3000/auth/callback
+   http://localhost:3001/auth/callback
    ```
 
 5. For production, set the Site URL to the production application origin and
@@ -65,6 +65,24 @@ In the Supabase Dashboard:
    ```text
    https://YOUR_DOMAIN.com/auth/callback
    ```
+
+> **The Site URL, the Redirect URL, and `NEXT_PUBLIC_APP_URL` must all be the
+> same origin, including the port.** The recommended reset template below
+> builds its link from `{{ .SiteURL }}`, so a Site URL pointing at a port the
+> application is not serving sends every recovery link to the wrong place —
+> the link either fails to load or lands on a different app. `npm run dev`
+> pins this application to port 3001 for exactly this reason (port 3000 is
+> left free for the public website and the Playwright E2E servers). If you
+> change the port, change all three values together.
+
+> **Supabase reports a rejected recovery link in the URL _fragment_**
+> (`#error=access_denied&error_code=otp_expired`). Browsers never send a
+> fragment to the server, so an expired, already-consumed, or wrong-flow
+> link reaches `/auth/callback` with no parameters at all and is
+> indistinguishable from a hand-typed URL. Every recovery dead end
+> deliberately ends on the same `?error=invalid_reset_link` page, so in
+> development the server log is the only way to tell them apart — look for
+> `[auth] password recovery stopped: stage=... reason=...`.
 
 6. Disable public user registration. In the Email provider settings, turn off
    the option that allows new users to sign up.
@@ -135,6 +153,25 @@ This is a known, accepted trade-off for Phase 1, not a resolved issue. Treat
 this callback design as unverified for production until prefetch behavior has
 actually been tested against the target mail environment.
 
+### Troubleshooting a recovery link that lands on `?error=invalid_reset_link`
+
+In development the server log names the exact dead end. Match it here:
+
+| Logged code / reason | What actually happened | Fix |
+| --- | --- | --- |
+| `code=pkce_code_verifier_not_found` | The link was opened in a **different browser, profile, or an email client's in-app browser** than the one that submitted the forgot-password form. The PKCE handoff stores a `code_verifier` cookie in that browser and the exchange cannot complete without it. | Open the link in the same browser, or switch to the `token_hash` template above, which has no cookie dependency. |
+| `code=bad_code_verifier` | A verifier cookie exists but belongs to a **newer** reset request than the link being clicked. `resetPasswordForEmail` overwrites the single verifier cookie every time, so requesting a second reset silently invalidates the first email. | Request one reset, then click that email. Do not request again while testing an older link. |
+| `reason=provider_reported_error` (`error_code=otp_expired`) | Supabase rejected the token: expired, or already spent — including by an email scanner that fetched the link first. | Request a new link; see the prefetch trade-off above. |
+| `reason=missing_callback_parameters` | The callback was reached with no query parameters. Usually the fragment case above (`#error=...`), which the server cannot see. | Look at the address bar after the `#` for the real reason. |
+| `reason=no_recovery_user_session` | `/auth/update-password` was reached without a verified session — the callback never completed. | Start from a fresh link. |
+| `reason=no_recovery_marker` | A session exists but not the signed marker. The marker is HMAC-signed with `SUPABASE_SECRET_KEY`, so **changing that key invalidates every outstanding marker**. | Request a fresh link after any key rotation. |
+
+**The PKCE handoff is same-browser-only by design.** That is not a bug in
+this application: `@supabase/ssr` pins `flowType: "pkce"` and cannot be
+configured otherwise, so the default `{{ .ConfirmationURL }}` template
+(`?code=`) always requires the verifier cookie. If recovery links must work
+from any device — which is the normal expectation for password reset —
+use the `token_hash` template above instead.
 The callback URL must be allow-listed exactly. Do not add a wildcard production
 redirect. A successful callback also issues a short-lived, server-signed,
 HttpOnly recovery marker. Both the update page and the password mutation
@@ -172,7 +209,7 @@ Create `.env.local` in the `nexfora-os/` repository root from `.env.example`,
 then set exactly these four variables:
 
 ```dotenv
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3001
 NEXT_PUBLIC_SUPABASE_URL=https://<PROJECT_REF>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_REPLACE_ME
 SUPABASE_SECRET_KEY=sb_secret_REPLACE_ME
@@ -406,7 +443,7 @@ npm run dev
 Open:
 
 ```text
-http://localhost:3000/auth/login
+http://localhost:3001/auth/login
 ```
 
 Sign in with the owner account. A valid active internal member should reach
