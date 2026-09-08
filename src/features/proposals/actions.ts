@@ -8,27 +8,53 @@ import { publicEnv } from "@/config/env.public";
 import { maskEmailForLogging, recipientDomain } from "@/lib/email/resend-result";
 import { sendProposalEmail } from "@/lib/email/send-proposal-email";
 import { requireInternalMember } from "@/lib/auth/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  buildProposalAttachmentStoragePath,
+  hasMismatchedFileSignature,
+  MAX_FILE_SIZE_BYTES,
+  PROPOSAL_ATTACHMENT_BUCKET,
+  PROPOSAL_ATTACHMENT_MIME_TYPE,
+  sanitizeDisplayFileName,
+  SIGNED_URL_TTL_SECONDS,
+} from "@/lib/storage/proposal-attachments";
 import type { Database } from "@/types/database";
 
 import {
   NON_CONFLICTING_PROPOSAL_STATUSES,
   PROPOSAL_ACCESS_TOKEN_TTL_DAYS,
+  type ProposalStatus,
 } from "./constants";
-import { isLeadEligibleForProposal, memberCanManageProposals } from "./permissions";
+import {
+  isLeadEligibleForProposal,
+  isProposalEditable,
+  memberCanManageProposals,
+} from "./permissions";
 import {
   proposalCreateSchema,
   proposalEditSchema,
   proposalIdSchema,
   proposalItemFormSchema,
+  uploadProposalAttachmentFieldsSchema,
+  validateUploadedProposalAttachment,
 } from "./schemas";
 import { generateProposalAccessToken } from "./token";
-import type { ProposalActionResult } from "./types";
+import type {
+  ProposalActionResult,
+  ProposalAttachmentDownloadResult,
+} from "./types";
 
 const GENERIC_ERROR =
   "We could not save your changes. Please review the form and try again.";
 const SEND_ERROR =
   "We could not send this proposal. No changes were made. Please try again.";
+const ATTACHMENT_UPLOAD_ERROR =
+  "We could not upload this attachment. Please try again.";
+const ATTACHMENT_DOWNLOAD_ERROR =
+  "We could not prepare this download. Please try again.";
+const ATTACHMENT_LOCKED_MESSAGE =
+  "The attachment can no longer be changed. Sent proposals become editable again only after changes are requested.";
 
 // `send_proposal` and `reissue_proposal_access_token` raise these exact,
 // already user-safe messages (no SQL, no schema, no internals) for known
@@ -143,6 +169,63 @@ async function findOwnedProposal(
     .maybeSingle();
 
   return data ?? null;
+}
+
+interface OwnedProposalAttachment {
+  id: string;
+  status: string;
+  attachment_storage_path: string | null;
+  attachment_file_name: string | null;
+}
+
+/**
+ * Attachment-aware variant of findOwnedProposal. Kept separate rather than
+ * widening that helper's select, because every other caller only needs the
+ * three columns it already returns.
+ */
+async function findOwnedProposalAttachment(
+  organizationId: string,
+  proposalId: string,
+): Promise<OwnedProposalAttachment | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("proposals")
+    .select("id, status, attachment_storage_path, attachment_file_name")
+    .eq("id", proposalId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  return data ?? null;
+}
+
+function revalidateProposalAttachmentPaths(proposalId: string): void {
+  revalidatePath(`/admin/proposals/${proposalId}`);
+  revalidatePath(`/admin/proposals/${proposalId}/edit`);
+  revalidatePath(`/admin/proposals/${proposalId}/preview`);
+}
+
+/**
+ * Best-effort removal of a storage object that is no longer referenced by any
+ * proposal row. Never throws and never fails the caller: a leftover object is
+ * unreachable (the bucket is private and has no storage policy) and strictly
+ * less harmful than reporting a failure for work that already succeeded.
+ */
+async function removeProposalAttachmentObject(
+  storagePath: string,
+  stage: string,
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { error } = await admin.storage
+      .from(PROPOSAL_ATTACHMENT_BUCKET)
+      .remove([storagePath]);
+
+    if (error) {
+      console.error("Proposal attachment cleanup failed.", { stage });
+    }
+  } catch {
+    console.error("Proposal attachment cleanup threw.", { stage });
+  }
 }
 
 export async function createProposalAction(
@@ -512,6 +595,279 @@ export async function removeProposalItemAction(
   } catch {
     console.error("Proposal line item removal failed.");
     return { ok: false, message: GENERIC_ERROR };
+  }
+}
+
+/**
+ * Uploads (or replaces) the proposal's single optional PDF attachment.
+ *
+ * Authorization is decided here, not by a storage policy: this bucket has no
+ * storage.objects policy at all (see the Phase 13 migration). The object write
+ * uses the service-role client, and is reached only after the caller has been
+ * confirmed as a proposal manager in the owning organization, with the
+ * proposal still in an editable status.
+ */
+export async function uploadProposalAttachmentAction(
+  proposalId: string,
+  formData: FormData,
+): Promise<ProposalActionResult> {
+  const idResult = proposalIdSchema.safeParse(proposalId);
+  if (!idResult.success) {
+    return { ok: false, message: "This proposal could not be found." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return { ok: false, message: "Choose a PDF file to upload." };
+  }
+
+  const fieldsResult = uploadProposalAttachmentFieldsSchema.safeParse({
+    idempotencyKey: formData.get("idempotencyKey"),
+  });
+
+  if (!fieldsResult.success) {
+    return { ok: false, message: ATTACHMENT_UPLOAD_ERROR };
+  }
+
+  const fileCheck = validateUploadedProposalAttachment(file);
+  if (!fileCheck.ok) {
+    return { ok: false, message: fileCheck.message };
+  }
+
+  try {
+    const member = await requireInternalMember();
+    if (!memberCanManageProposals(member)) {
+      return {
+        ok: false,
+        message: "You do not have permission to change this attachment.",
+      };
+    }
+
+    const proposal = await findOwnedProposalAttachment(
+      member.organizationId,
+      idResult.data,
+    );
+    if (!proposal) {
+      return { ok: false, message: "This proposal could not be found." };
+    }
+
+    if (!isProposalEditable(proposal.status as ProposalStatus)) {
+      return { ok: false, message: ATTACHMENT_LOCKED_MESSAGE };
+    }
+
+    // Re-check the real buffer rather than trusting the browser-reported
+    // size, then confirm the bytes actually look like a PDF so a renamed
+    // file cannot be stored under a PDF mime type.
+    const buffer = await file.arrayBuffer();
+    if (buffer.byteLength <= 0 || buffer.byteLength > MAX_FILE_SIZE_BYTES) {
+      return { ok: false, message: "This file is too large." };
+    }
+
+    if (hasMismatchedFileSignature(buffer, PROPOSAL_ATTACHMENT_MIME_TYPE)) {
+      return {
+        ok: false,
+        message: "This file's contents do not look like a PDF.",
+      };
+    }
+
+    const safeFileName = sanitizeDisplayFileName(file.name);
+    const storagePath = buildProposalAttachmentStoragePath({
+      organizationId: member.organizationId,
+      proposalId: idResult.data,
+      uniqueId: fieldsResult.data.idempotencyKey,
+      safeFileName,
+    });
+    const previousPath = proposal.attachment_storage_path;
+
+    const admin = createAdminClient();
+    const { error: uploadError } = await admin.storage
+      .from(PROPOSAL_ATTACHMENT_BUCKET)
+      .upload(storagePath, buffer, {
+        contentType: PROPOSAL_ATTACHMENT_MIME_TYPE,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Proposal attachment storage upload failed.", {
+        proposalId: idResult.data,
+        fileSize: buffer.byteLength,
+      });
+      return { ok: false, message: ATTACHMENT_UPLOAD_ERROR };
+    }
+
+    // Written through the RLS-scoped client on purpose:
+    // proposals_update_proposal_managers re-checks role and editable status at
+    // the database boundary, so the checks above are defense in depth rather
+    // than the only gate.
+    const supabase = await createClient();
+    const updates: ProposalUpdate = {
+      attachment_file_name: safeFileName,
+      attachment_storage_path: storagePath,
+      attachment_mime_type: PROPOSAL_ATTACHMENT_MIME_TYPE,
+      attachment_file_size: buffer.byteLength,
+      attachment_uploaded_at: new Date().toISOString(),
+      attachment_uploaded_by: member.profileId,
+    };
+    const { data, error } = await supabase
+      .from("proposals")
+      .update(updates)
+      .eq("id", idResult.data)
+      .eq("organization_id", member.organizationId)
+      .select("id")
+      .maybeSingle();
+
+    if (error || !data) {
+      // The object is uploaded but nothing references it — remove it rather
+      // than leaving it orphaned.
+      await removeProposalAttachmentObject(storagePath, "metadata_update");
+      console.error("Proposal attachment metadata update failed.", {
+        proposalId: idResult.data,
+      });
+      return { ok: false, message: ATTACHMENT_UPLOAD_ERROR };
+    }
+
+    // Only after the row points at the new object is the old one safe to
+    // drop. A retry that reused the same idempotency key resolves to the same
+    // path, in which case there is nothing to remove.
+    if (previousPath && previousPath !== storagePath) {
+      await removeProposalAttachmentObject(previousPath, "replace_previous");
+    }
+
+    revalidateProposalAttachmentPaths(idResult.data);
+    return { ok: true, message: "Attachment uploaded.", proposalId: data.id };
+  } catch {
+    console.error(
+      "Proposal attachment upload authorization or persistence failed.",
+    );
+    return { ok: false, message: ATTACHMENT_UPLOAD_ERROR };
+  }
+}
+
+export async function removeProposalAttachmentAction(
+  proposalId: string,
+): Promise<ProposalActionResult> {
+  const idResult = proposalIdSchema.safeParse(proposalId);
+  if (!idResult.success) {
+    return { ok: false, message: "This proposal could not be found." };
+  }
+
+  try {
+    const member = await requireInternalMember();
+    if (!memberCanManageProposals(member)) {
+      return {
+        ok: false,
+        message: "You do not have permission to change this attachment.",
+      };
+    }
+
+    const proposal = await findOwnedProposalAttachment(
+      member.organizationId,
+      idResult.data,
+    );
+    if (!proposal) {
+      return { ok: false, message: "This proposal could not be found." };
+    }
+
+    if (!isProposalEditable(proposal.status as ProposalStatus)) {
+      return { ok: false, message: ATTACHMENT_LOCKED_MESSAGE };
+    }
+
+    // Idempotent: removing an attachment that is already gone is a success,
+    // so a double submit cannot produce a confusing error.
+    if (!proposal.attachment_storage_path) {
+      return { ok: true, message: "No attachment to remove." };
+    }
+
+    const supabase = await createClient();
+    const updates: ProposalUpdate = {
+      attachment_file_name: null,
+      attachment_storage_path: null,
+      attachment_mime_type: null,
+      attachment_file_size: null,
+      attachment_uploaded_at: null,
+      attachment_uploaded_by: null,
+    };
+    const { data, error } = await supabase
+      .from("proposals")
+      .update(updates)
+      .eq("id", idResult.data)
+      .eq("organization_id", member.organizationId)
+      .select("id")
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error("Proposal attachment removal failed.", {
+        proposalId: idResult.data,
+      });
+      return { ok: false, message: GENERIC_ERROR };
+    }
+
+    await removeProposalAttachmentObject(
+      proposal.attachment_storage_path,
+      "remove_action",
+    );
+
+    revalidateProposalAttachmentPaths(idResult.data);
+    return { ok: true, message: "Attachment removed." };
+  } catch {
+    console.error("Proposal attachment removal authorization failed.");
+    return { ok: false, message: GENERIC_ERROR };
+  }
+}
+
+/**
+ * Mints a short-lived signed URL for an internal viewer. Requires an active
+ * internal member of the owning organization, matching the read access the
+ * proposals_select_internal_members policy already grants — deliberately not
+ * restricted to proposal managers, since anyone who can view the proposal can
+ * view its attachment.
+ */
+export async function getProposalAttachmentDownloadUrlAction(
+  proposalId: string,
+): Promise<ProposalAttachmentDownloadResult> {
+  const idResult = proposalIdSchema.safeParse(proposalId);
+  if (!idResult.success) {
+    return { ok: false, message: "This attachment could not be found." };
+  }
+
+  try {
+    const member = await requireInternalMember();
+    const proposal = await findOwnedProposalAttachment(
+      member.organizationId,
+      idResult.data,
+    );
+
+    if (
+      !proposal ||
+      !proposal.attachment_storage_path ||
+      !proposal.attachment_file_name
+    ) {
+      return { ok: false, message: "This attachment could not be found." };
+    }
+
+    const admin = createAdminClient();
+    const { data: signed, error } = await admin.storage
+      .from(PROPOSAL_ATTACHMENT_BUCKET)
+      .createSignedUrl(proposal.attachment_storage_path, SIGNED_URL_TTL_SECONDS, {
+        download: proposal.attachment_file_name,
+      });
+
+    if (error || !signed?.signedUrl) {
+      console.error("Proposal attachment signed URL generation failed.", {
+        proposalId: idResult.data,
+      });
+      return { ok: false, message: ATTACHMENT_DOWNLOAD_ERROR };
+    }
+
+    return {
+      ok: true,
+      message: "Ready.",
+      url: signed.signedUrl,
+      fileName: proposal.attachment_file_name,
+    };
+  } catch {
+    console.error("Proposal attachment download authorization failed.");
+    return { ok: false, message: ATTACHMENT_DOWNLOAD_ERROR };
   }
 }
 

@@ -2,12 +2,21 @@
 
 import { z } from "zod";
 
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import {
+  PROPOSAL_ATTACHMENT_BUCKET,
+  SIGNED_URL_TTL_SECONDS,
+} from "@/lib/storage/proposal-attachments";
 
 import { PROPOSAL_STATUSES } from "./constants";
 import { requestProposalChangesSchema } from "./schemas";
 import { hashProposalAccessToken } from "./token";
-import type { ClientProposalActionResult, ClientProposalView } from "./types";
+import type {
+  ClientProposalActionResult,
+  ClientProposalView,
+  ProposalAttachmentDownloadResult,
+} from "./types";
 
 const GENERIC_INVALID_MESSAGE =
   "This proposal link is invalid or has expired.";
@@ -40,7 +49,14 @@ const clientProposalViewSchema = z.object({
   valid_until: z.string().nullable(),
   status: z.enum(PROPOSAL_STATUSES),
   sent_at: z.string().nullable(),
+  attachment_file_name: z.string().nullable(),
+  attachment_file_size: z.number().nullable(),
   items: z.array(clientProposalItemSchema),
+});
+
+const clientProposalAttachmentSchema = z.object({
+  storage_path: z.string().min(1),
+  file_name: z.string().min(1),
 });
 
 function logSupabaseError(
@@ -81,6 +97,83 @@ export async function viewProposalByTokenAction(
 
   const parsed = clientProposalViewSchema.safeParse(data);
   return parsed.success ? (parsed.data as ClientProposalView) : null;
+}
+
+/**
+ * Mints a short-lived signed URL for the proposal's PDF attachment on behalf
+ * of an anonymous link holder.
+ *
+ * The access decision belongs entirely to get_proposal_attachment_by_token,
+ * which re-validates the token (format, not revoked, not expired) exactly as
+ * view_proposal_by_token does and returns the storage path only when it
+ * passes. Storage RLS cannot make this decision: this request reaches Postgres
+ * as the shared `anon` role with no auth.uid(), and a policy can never see the
+ * caller's raw token — only its hash, and only inside the security-definer
+ * function's own scope. The signed URL is therefore minted with the
+ * service-role client after that check, never before it.
+ *
+ * Every failure returns the same generic message so a caller cannot tell an
+ * expired token from a revoked one, a wrong one, or a proposal that simply has
+ * no attachment.
+ */
+export async function getProposalAttachmentDownloadUrlByTokenAction(
+  rawToken: string,
+): Promise<ProposalAttachmentDownloadResult> {
+  const genericFailure = {
+    ok: false as const,
+    message: "This attachment is no longer available.",
+  };
+
+  if (!rawToken || rawToken.length > 200) {
+    return genericFailure;
+  }
+
+  try {
+    const tokenHash = hashProposalAccessToken(rawToken);
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc(
+      "get_proposal_attachment_by_token",
+      { p_token_hash: tokenHash },
+    );
+
+    if (error) {
+      logSupabaseError("getProposalAttachmentDownloadUrlByTokenAction", error);
+      return genericFailure;
+    }
+
+    const parsed = clientProposalAttachmentSchema.safeParse(data);
+    if (!parsed.success) {
+      return genericFailure;
+    }
+
+    const admin = createAdminClient();
+    const { data: signed, error: signError } = await admin.storage
+      .from(PROPOSAL_ATTACHMENT_BUCKET)
+      .createSignedUrl(parsed.data.storage_path, SIGNED_URL_TTL_SECONDS, {
+        download: parsed.data.file_name,
+      });
+
+    if (signError || !signed?.signedUrl) {
+      console.error("Client proposal attachment signed URL failed.");
+      return {
+        ok: false,
+        message: "We couldn't prepare this download. Please try again.",
+      };
+    }
+
+    return {
+      ok: true,
+      message: "Ready.",
+      url: signed.signedUrl,
+      fileName: parsed.data.file_name,
+    };
+  } catch {
+    console.error("Client proposal attachment download failed.");
+    return {
+      ok: false,
+      message: "We couldn't prepare this download. Please try again.",
+    };
+  }
 }
 
 export async function acceptProposalByTokenAction(

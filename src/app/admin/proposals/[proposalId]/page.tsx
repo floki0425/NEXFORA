@@ -13,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getProposalAttachmentDownloadUrlAction } from "@/features/proposals/actions";
+import { ProposalAttachmentDownloadButton } from "@/features/proposals/components/proposal-attachment-download-button";
 import { ResendProposalEmailButton } from "@/features/proposals/components/resend-proposal-email-button";
 import { SendProposalButton } from "@/features/proposals/components/send-proposal-button";
 import {
@@ -20,6 +22,7 @@ import {
   PROPOSAL_STATUS_LABELS,
 } from "@/features/proposals/constants";
 import {
+  formatFileSize,
   formatMoney,
   formatProposalDate,
   formatProposalDay,
@@ -281,6 +284,37 @@ export default async function ProposalDetailPage({
               </CardContent>
             </Card>
           ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Final PDF</CardTitle>
+              <CardDescription>
+                {proposal.attachment_file_name
+                  ? "Included with the secure client link."
+                  : "Optional. Attach one from the edit page while the proposal is still editable."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {proposal.attachment_file_name ? (
+                <div className="space-y-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {proposal.attachment_file_name}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      PDF · {formatFileSize(proposal.attachment_file_size)}
+                    </p>
+                  </div>
+                  <ProposalAttachmentDownloadButton
+                    downloadKey={proposal.id}
+                    action={getProposalAttachmentDownloadUrlAction}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-text-muted">No PDF attached.</p>
+              )}
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>

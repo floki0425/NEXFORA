@@ -72,6 +72,25 @@ export interface ProposalActionResult {
   proposalId?: string;
 }
 
+/**
+ * Shape returned by both attachment download actions — the internal one keyed
+ * by proposal id, and the token-gated client one. Structurally identical to
+ * the files feature's DownloadUrlResult so the shared download button can
+ * accept either without knowing which context it is in.
+ */
+export interface ProposalAttachmentDownloadResult {
+  ok: boolean;
+  message: string;
+  url?: string;
+  fileName?: string;
+}
+
+/** Attachment metadata as rendered by ProposalDocument in both contexts. */
+export interface ProposalAttachmentSummary {
+  fileName: string;
+  fileSize: number | null;
+}
+
 export interface ClientProposalItemView {
   name: string;
   description: string | null;
@@ -98,6 +117,11 @@ export interface ClientProposalView {
   valid_until: string | null;
   status: ProposalStatus;
   sent_at: string | null;
+  // Presence hints only. The storage path is never sent to the client on page
+  // load — it is resolved at download time by
+  // get_proposal_attachment_by_token.
+  attachment_file_name: string | null;
+  attachment_file_size: number | null;
   items: ClientProposalItemView[];
 }
 

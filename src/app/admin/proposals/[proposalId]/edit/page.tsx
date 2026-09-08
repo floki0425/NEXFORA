@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { LineItemsEditor } from "@/features/proposals/components/line-items-editor";
+import { ProposalAttachmentManager } from "@/features/proposals/components/proposal-attachment-manager";
 import { ProposalEditForm } from "@/features/proposals/components/proposal-edit-form";
 import {
   isProposalEditable,
@@ -63,6 +64,17 @@ export default async function EditProposalPage({
             total={proposal.total}
             currency={proposal.currency}
             editable
+          />
+          <ProposalAttachmentManager
+            proposalId={proposal.id}
+            attachment={
+              proposal.attachment_file_name
+                ? {
+                    fileName: proposal.attachment_file_name,
+                    fileSize: proposal.attachment_file_size,
+                  }
+                : null
+            }
           />
         </>
       ) : null}

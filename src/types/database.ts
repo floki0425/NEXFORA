@@ -1248,6 +1248,12 @@ export type Database = {
       proposals: {
         Row: {
           accepted_at: string | null
+          attachment_file_name: string | null
+          attachment_file_size: number | null
+          attachment_mime_type: string | null
+          attachment_storage_path: string | null
+          attachment_uploaded_at: string | null
+          attachment_uploaded_by: string | null
           client_id: string | null
           created_at: string
           created_by: string | null
@@ -1277,6 +1283,12 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          attachment_file_name?: string | null
+          attachment_file_size?: number | null
+          attachment_mime_type?: string | null
+          attachment_storage_path?: string | null
+          attachment_uploaded_at?: string | null
+          attachment_uploaded_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1306,6 +1318,12 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          attachment_file_name?: string | null
+          attachment_file_size?: number | null
+          attachment_mime_type?: string | null
+          attachment_storage_path?: string | null
+          attachment_uploaded_at?: string | null
+          attachment_uploaded_by?: string | null
           client_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1334,6 +1352,13 @@ export type Database = {
           viewed_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "proposals_attachment_uploaded_by_fkey"
+            columns: ["attachment_uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "proposals_client_id_fkey"
             columns: ["client_id"]
@@ -2348,6 +2373,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_proposal_attachment_by_token: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       get_proposal_win_rate_report: {
         Args: { p_created_by?: string; p_from?: string; p_to?: string }
         Returns: Json
@@ -2598,12 +2627,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2627,11 +2656,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2652,11 +2681,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2677,11 +2706,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2694,11 +2723,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

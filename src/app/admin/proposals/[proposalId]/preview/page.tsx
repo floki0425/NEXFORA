@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { getProposalAttachmentDownloadUrlAction } from "@/features/proposals/actions";
 import { ProposalDocument } from "@/features/proposals/components/proposal-document";
 import { getProposalDetail } from "@/features/proposals/queries";
 import { proposalIdSchema } from "@/features/proposals/schemas";
@@ -62,7 +63,15 @@ export default async function PreviewProposalPage({
           status: proposal.status,
           items: proposal.items,
           recipientLabel: proposal.clientName ?? proposal.leadName,
+          attachment: proposal.attachment_file_name
+            ? {
+                fileName: proposal.attachment_file_name,
+                fileSize: proposal.attachment_file_size,
+              }
+            : null,
         }}
+        downloadKey={proposal.id}
+        onDownloadAttachment={getProposalAttachmentDownloadUrlAction}
       />
     </div>
   );

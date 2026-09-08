@@ -16,7 +16,7 @@ import type {
 } from "./types";
 
 const PROPOSAL_LIST_COLUMNS =
-  "id, organization_id, lead_id, client_id, proposal_number, title, summary, scope, deliverables, timeline_text, payment_terms_text, terms_text, status, currency, subtotal, discount, tax, total, valid_until, requested_changes_message, sent_at, viewed_at, accepted_at, declined_at, created_by, created_at, updated_at, leads!proposals_lead_id_fkey(full_name, business_name), clients!proposals_client_id_fkey(business_name)";
+  "id, organization_id, lead_id, client_id, proposal_number, title, summary, scope, deliverables, timeline_text, payment_terms_text, terms_text, status, currency, subtotal, discount, tax, total, valid_until, requested_changes_message, sent_at, viewed_at, accepted_at, declined_at, attachment_file_name, attachment_storage_path, attachment_mime_type, attachment_file_size, attachment_uploaded_at, attachment_uploaded_by, created_by, created_at, updated_at, leads!proposals_lead_id_fkey(full_name, business_name), clients!proposals_client_id_fkey(business_name)";
 
 interface SupabaseErrorDetails {
   code?: string | null;
@@ -73,6 +73,12 @@ interface ProposalJoinRow {
   viewed_at: string | null;
   accepted_at: string | null;
   declined_at: string | null;
+  attachment_file_name: string | null;
+  attachment_storage_path: string | null;
+  attachment_mime_type: string | null;
+  attachment_file_size: number | null;
+  attachment_uploaded_at: string | null;
+  attachment_uploaded_by: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
