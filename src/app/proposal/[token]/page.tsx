@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import { ErrorState } from "@/components/ui/error-state";
 import { ProposalClientActions } from "@/features/proposals/components/proposal-client-actions";
 import { ProposalDocument } from "@/features/proposals/components/proposal-document";
-import { viewProposalByTokenAction } from "@/features/proposals/client-actions";
+import {
+  getProposalAttachmentDownloadUrlByTokenAction,
+  viewProposalByTokenAction,
+} from "@/features/proposals/client-actions";
 
 interface SecureProposalPageProps {
   params: Promise<{ token: string }>;
@@ -56,7 +59,15 @@ export default async function SecureProposalPage({
           validUntil: proposal.valid_until,
           status: proposal.status,
           items: proposal.items,
+          attachment: proposal.attachment_file_name
+            ? {
+                fileName: proposal.attachment_file_name,
+                fileSize: proposal.attachment_file_size,
+              }
+            : null,
         }}
+        downloadKey={token}
+        onDownloadAttachment={getProposalAttachmentDownloadUrlByTokenAction}
       />
       <ProposalClientActions token={token} status={proposal.status} />
     </div>

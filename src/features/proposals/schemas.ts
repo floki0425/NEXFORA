@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  isAllowedProposalAttachmentExtension,
+  MAX_FILE_SIZE_BYTES,
+  PROPOSAL_ATTACHMENT_MIME_TYPE,
+} from "../../lib/storage/proposal-attachments.ts";
+
 import { PROPOSAL_STATUSES } from "./constants.ts";
 
 const optionalText = (max: number) => z.string().trim().max(max);
@@ -68,6 +74,61 @@ export const proposalItemFormSchema = z.object({
 });
 
 export type ProposalItemFormInput = z.input<typeof proposalItemFormSchema>;
+
+export const uploadProposalAttachmentFieldsSchema = z.object({
+  // Client-generated once per upload attempt and resent unchanged on retry —
+  // never trusted for authorization, only for idempotency (see
+  // buildProposalAttachmentStoragePath).
+  idempotencyKey: z.uuid(),
+});
+
+export interface ProposalAttachmentValidationError {
+  ok: false;
+  message: string;
+}
+
+export interface ProposalAttachmentValidationSuccess {
+  ok: true;
+}
+
+/**
+ * Validates the uploaded attachment before it is read into memory. file.size
+ * and file.type come from the browser's File metadata, so both are re-checked
+ * server-side against the real buffer (length, and a magic-byte signature
+ * check) before anything is written to storage.
+ */
+export function validateUploadedProposalAttachment(
+  file: File,
+): ProposalAttachmentValidationError | ProposalAttachmentValidationSuccess {
+  if (file.size <= 0) {
+    return { ok: false, message: "Choose a PDF file to upload." };
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return {
+      ok: false,
+      message: `This file is too large. The maximum size is ${Math.floor(
+        MAX_FILE_SIZE_BYTES / (1024 * 1024),
+      )} MB.`,
+    };
+  }
+
+  if (!isAllowedProposalAttachmentExtension(file.name)) {
+    return {
+      ok: false,
+      message: "Only PDF files can be attached to a proposal.",
+    };
+  }
+
+  if (file.type && file.type !== PROPOSAL_ATTACHMENT_MIME_TYPE) {
+    return {
+      ok: false,
+      message: "Only PDF files can be attached to a proposal.",
+    };
+  }
+
+  return { ok: true };
+}
 
 export const requestProposalChangesSchema = z.object({
   message: z

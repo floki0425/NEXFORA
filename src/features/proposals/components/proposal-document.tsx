@@ -5,7 +5,13 @@ import {
   PROPOSAL_STATUS_LABELS,
   type ProposalStatus,
 } from "../constants";
-import { formatMoney, formatProposalDay } from "../format";
+import { formatFileSize, formatMoney, formatProposalDay } from "../format";
+import type {
+  ProposalAttachmentDownloadResult,
+  ProposalAttachmentSummary,
+} from "../types";
+
+import { ProposalAttachmentDownloadButton } from "./proposal-attachment-download-button";
 
 export interface ProposalDocumentItem {
   name: string;
@@ -32,6 +38,21 @@ export interface ProposalDocumentData {
   status: ProposalStatus;
   items: ProposalDocumentItem[];
   recipientLabel?: string | null;
+  attachment?: ProposalAttachmentSummary | null;
+}
+
+interface ProposalDocumentProps {
+  proposal: ProposalDocumentData;
+  /**
+   * Opaque key handed straight back to `onDownloadAttachment` — the proposal
+   * id internally, the raw access token on the secure client page. Keeping it
+   * opaque is what lets this one component serve both contexts without
+   * importing either action itself.
+   */
+  downloadKey?: string;
+  onDownloadAttachment?: (
+    downloadKey: string,
+  ) => Promise<ProposalAttachmentDownloadResult>;
 }
 
 function deliverablesList(deliverables: unknown): string[] {
@@ -45,7 +66,11 @@ function deliverablesList(deliverables: unknown): string[] {
  * link. Reused by the internal preview page so the two can never drift
  * apart. This component never mutates proposal state.
  */
-export function ProposalDocument({ proposal }: { proposal: ProposalDocumentData }) {
+export function ProposalDocument({
+  proposal,
+  downloadKey,
+  onDownloadAttachment,
+}: ProposalDocumentProps) {
   const deliverables = deliverablesList(proposal.deliverables);
 
   return (
@@ -113,6 +138,30 @@ export function ProposalDocument({ proposal }: { proposal: ProposalDocumentData 
               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-text-secondary">
                 {proposal.timelineText}
               </p>
+            </section>
+          ) : null}
+
+          {proposal.attachment ? (
+            <section>
+              <h2 className="text-sm font-semibold text-foreground">
+                Attached document
+              </h2>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface-muted px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {proposal.attachment.fileName}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    PDF · {formatFileSize(proposal.attachment.fileSize)}
+                  </p>
+                </div>
+                {downloadKey && onDownloadAttachment ? (
+                  <ProposalAttachmentDownloadButton
+                    downloadKey={downloadKey}
+                    action={onDownloadAttachment}
+                  />
+                ) : null}
+              </div>
             </section>
           ) : null}
 
